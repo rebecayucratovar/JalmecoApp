@@ -1,4 +1,4 @@
-package com.jalmeco.jalmeco_campo
+package com.jalmeco.jalmeco_gps
 
 import io.flutter.embedding.android.FlutterActivity
 
