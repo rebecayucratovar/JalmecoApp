@@ -1,4 +1,4 @@
-# Jalmeco Campo
+# Jalmeco GPS
 
 Sistema de seguimiento de técnicos de campo. Monorepo con tres partes:
 
