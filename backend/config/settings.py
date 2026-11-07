@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     'jornadas',
     'ubicaciones',
     'alertas',
+    'verificaciones',
+    'core',
     'odoo_sync',
 ]
 
