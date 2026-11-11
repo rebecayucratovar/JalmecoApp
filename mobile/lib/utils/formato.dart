@@ -42,8 +42,11 @@ String duracion(int minutos) {
   return '$h h $m min';
 }
 
-/// "52,8 km"
-String kilometros(double km) => '${km.toStringAsFixed(1).replaceAll('.', ',')} km';
+/// "52,8 km"; menos de 1 km en metros ("320 m")
+String kilometros(double km) {
+  if (km < 1) return '${(km * 1000).round()} m';
+  return '${km.toStringAsFixed(1).replaceAll('.', ',')} km';
+}
 
 /// "Hace un momento", "Hace 3 min", "Hace 2 h"
 String haceCuanto(DateTime d, {DateTime? ahora}) {

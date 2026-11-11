@@ -98,6 +98,7 @@ class Motor {
   DateTime? ultimoEnvio;
 
   DateTime? _ultimaConsulta;
+  DateTime? _ultimoGuardado; // hora GPS del último punto guardado
   StreamSubscription<PuntoGps>? _suscripcion;
   int? _distanciaSuscrita;
   bool _avisoGpsEnviado = false;
@@ -196,6 +197,9 @@ class Motor {
     // Doble control: solo en modo activo y nunca dentro de la franja de pausa.
     if (modo != ModoRastreo.activo || _detenido) return;
     if (enFranja(punto.registradoEn, estado?.almuerzoInicio, estado?.almuerzoFin)) return;
+    // El GPS puede entregar la misma lectura por el flujo y por "actual()": solo puntos nuevos.
+    if (_ultimoGuardado != null && !punto.registradoEn.isAfter(_ultimoGuardado!)) return;
+    _ultimoGuardado = punto.registradoEn;
     await cola.agregar(punto.conBateria(await bateria()));
     ultimaCaptura = _reloj();
   }

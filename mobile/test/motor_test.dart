@@ -45,7 +45,11 @@ class GpsFalso implements FuenteGps {
   int pedidosActual = 0;
   DateTime Function() reloj = DateTime.now;
 
-  void mover(double lat) => _ctrl.add(PuntoGps(lat: lat, lng: -68.1, registradoEn: reloj()));
+  int _segundos = 0;
+
+  /// Una lectura nueva del GPS (cada una 1 s después de la anterior, o en la hora `en`).
+  void mover(double lat, {DateTime? en}) => _ctrl.add(
+      PuntoGps(lat: lat, lng: -68.1, registradoEn: en ?? reloj().add(Duration(seconds: ++_segundos))));
 
   @override
   Stream<PuntoGps> escuchar(int distanciaM) {
@@ -184,6 +188,17 @@ void main() {
     expect(servidor.lotes, hasLength(2));
     expect(servidor.lotes.last, hasLength(2));
     expect(cola.puntos, isEmpty);
+  });
+
+  test('la misma lectura del GPS no se guarda dos veces', () async {
+    servidor.caido = false;
+    await motor.tick(); // punto inmediato a las 10:00:00 (ya enviado)
+    gps.mover(-16.5, en: ahora); // el flujo entrega la misma lectura (misma hora)
+    await esperar();
+    expect(cola.puntos, isEmpty);
+    gps.mover(-16.51);
+    await esperar();
+    expect(cola.puntos, hasLength(1));
   });
 
   test('quieto: un punto cada intervalo_seg (120 s), no antes', () async {

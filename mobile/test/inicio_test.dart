@@ -85,6 +85,8 @@ void main() {
       expect(duracion(45), '45 min');
       expect(duracion(120), '2 h');
       expect(kilometros(52.84), '52,8 km');
+      expect(kilometros(0.04), '40 m');
+      expect(kilometros(0), '0 m');
     });
   });
 
