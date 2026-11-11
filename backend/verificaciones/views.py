@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from django.contrib.gis.geos import Point
 from django.db import transaction
 from django.utils import timezone
@@ -7,9 +5,9 @@ from rest_framework import exceptions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import Configuracion
 from usuarios.permisos import EsTecnico
 
+from . import servicios
 from .models import Verificacion
 from .serializers import ResponderVerificacionSerializer, VerificacionPendienteSerializer
 
@@ -20,7 +18,7 @@ class Conflicto(exceptions.APIException):
 
 
 def _limite():
-    return timedelta(minutes=Configuracion.actual().verificacion_limite_min)
+    return servicios.limite()
 
 
 class MiVerificacionPendienteView(APIView):

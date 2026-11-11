@@ -23,6 +23,8 @@ dependencies:
   sqflite: 2.4.2                   # cola offline de puntos
   battery_plus: 7.1.2              # nivel de batería en cada punto
   path: 1.9.1                      # rutas de archivos (SQLite)
+  local_auth: 2.3.0                # huella (verificación de identidad)
+  flutter_local_notifications: 20.1.0  # aviso "Confirma tu identidad" (alta prioridad)
 
 dev_dependencies:
   flutter_test:

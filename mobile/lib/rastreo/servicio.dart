@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../modelos/punto_gps.dart';
 import '../servicios/api.dart';
+import '../servicios/aviso_verificacion.dart';
 import '../servicios/sesion.dart';
 import 'cola_puntos.dart';
 import 'motor.dart';
@@ -105,6 +106,8 @@ class _ManejadorRastreo extends TaskHandler {
           FlutterForegroundTask.updateService(notificationTitle: titulo, notificationText: texto),
       alCambiar: (e) => FlutterForegroundTask.sendDataToMain(e.aMapa()),
       alSesionCerrada: () => FlutterForegroundTask.stopService(),
+      alVerificacion: (id, segundos) =>
+          id == null ? AvisoVerificacion.quitar() : AvisoVerificacion.mostrar(segundos),
     );
     await _motor!.tick();
   }

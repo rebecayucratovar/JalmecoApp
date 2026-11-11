@@ -73,10 +73,12 @@ class Motor {
     required this.notificar,
     this.alCambiar,
     this.alSesionCerrada,
+    this.alVerificacion,
     DateTime Function()? reloj,
   }) : _reloj = reloj ?? DateTime.now;
 
-  static const consultaEnJornada = Duration(minutes: 1);
+  // En jornada cada 30 s: así el aviso de huella llega a tiempo (hay ~3 min para responder).
+  static const consultaEnJornada = Duration(seconds: 30);
   static const consultaFuera = Duration(minutes: 2);
   static const envioCada = Duration(minutes: 1);
   static const loteMaximo = 500;
@@ -89,6 +91,10 @@ class Motor {
   final void Function(String titulo, String texto) notificar;
   final void Function(EstadoRastreo)? alCambiar;
   final void Function()? alSesionCerrada;
+
+  /// Verificación de huella: (id, segundos restantes) al aparecer una nueva; (null, 0) cuando
+  /// deja de estar pendiente (respondida o vencida) para quitar el aviso.
+  final void Function(int? id, int segundos)? alVerificacion;
   final DateTime Function() _reloj;
 
   EstadoJornada? estado;
@@ -99,6 +105,7 @@ class Motor {
 
   DateTime? _ultimaConsulta;
   DateTime? _ultimoGuardado; // hora GPS del último punto guardado
+  int? _verificacionAvisada; // id de la verificación cuyo aviso está en pantalla
   StreamSubscription<PuntoGps>? _suscripcion;
   int? _distanciaSuscrita;
   bool _avisoGpsEnviado = false;
@@ -135,6 +142,7 @@ class Motor {
     try {
       estado = EstadoJornada.fromJson(await api.get('mi/estado') as Map<String, dynamic>);
       _ultimaConsulta = _reloj();
+      _revisarVerificacion();
     } on ApiError catch (e) {
       if (e.codigo == 'SESION_EXPIRADA') {
         await detener();
@@ -144,6 +152,19 @@ class Motor {
       // Sin señal: se conserva el último estado conocido (los puntos se guardan igual y el
       // backend descarta los que caigan fuera de la jornada).
       _ultimaConsulta = _reloj();
+    }
+  }
+
+  void _revisarVerificacion() {
+    final v = estado?.ultimaVerificacion;
+    if (v != null && v.pendiente) {
+      if (_verificacionAvisada != v.id) {
+        _verificacionAvisada = v.id;
+        alVerificacion?.call(v.id, v.segundosRestantes!);
+      }
+    } else if (_verificacionAvisada != null) {
+      _verificacionAvisada = null;
+      alVerificacion?.call(null, 0);
     }
   }
 

@@ -9,6 +9,7 @@ import '../tema.dart';
 import 'estado_pantalla.dart';
 import 'inicio_pantalla.dart';
 import 'perfil_pantalla.dart';
+import 'verificacion_pantalla.dart';
 
 /// Pantalla principal con la barra inferior: Inicio · Estado · Perfil.
 /// Mantiene el sondeo de /mi/estado solo mientras la app está al frente.
@@ -26,11 +27,13 @@ class PrincipalPantalla extends StatefulWidget {
 class _PrincipalPantallaState extends State<PrincipalPantalla> with WidgetsBindingObserver {
   late final Datos _datos = widget.datos ?? Datos(widget.api, leerBateria: () => Battery().batteryLevel);
   int _pestana = 0;
+  int? _verificacionAbierta; // para abrirla sola una sola vez por solicitud
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _datos.addListener(_revisarVerificacion);
     _datos.iniciar();
     if (widget.conServicio) {
       FlutterForegroundTask.addTaskDataCallback(_datos.recibirDelServicio);
@@ -44,8 +47,27 @@ class _PrincipalPantallaState extends State<PrincipalPantalla> with WidgetsBindi
     ServicioRastreo.pedirEstado();
   }
 
+  /// Si llega una verificación de huella nueva, se abre sola (también al tocar la notificación,
+  /// que abre la app).
+  void _revisarVerificacion() {
+    final v = _datos.verificacion;
+    if (v == null || v.id == _verificacionAbierta) return;
+    _verificacionAbierta = v.id;
+    WidgetsBinding.instance.addPostFrameCallback((_) => abrirVerificacion());
+  }
+
+  Future<void> abrirVerificacion() async {
+    final v = _datos.verificacion;
+    if (v == null || !mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      fullscreenDialog: true,
+      builder: (_) => VerificacionPantalla(datos: _datos, verificacion: v),
+    ));
+  }
+
   @override
   void dispose() {
+    _datos.removeListener(_revisarVerificacion);
     WidgetsBinding.instance.removeObserver(this);
     if (widget.conServicio) FlutterForegroundTask.removeTaskDataCallback(_datos.recibirDelServicio);
     _datos.dispose();
@@ -67,7 +89,11 @@ class _PrincipalPantallaState extends State<PrincipalPantalla> with WidgetsBindi
     return Scaffold(
       body: SafeArea(
         child: IndexedStack(index: _pestana, children: [
-          InicioPantalla(datos: _datos, verEstado: () => setState(() => _pestana = 1)),
+          InicioPantalla(
+            datos: _datos,
+            verEstado: () => setState(() => _pestana = 1),
+            verificar: abrirVerificacion,
+          ),
           EstadoPantalla(datos: _datos),
           PerfilPantalla(datos: _datos),
         ]),

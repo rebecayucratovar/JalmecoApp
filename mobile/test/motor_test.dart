@@ -86,6 +86,7 @@ class Servidor {
   final lotes = <List<dynamic>>[];
   final avisos = <String>[];
   int consultasEstado = 0;
+  Map<String, Object?>? verificacion; // ultima_verificacion de /mi/estado
 
   http.Response _json(Object o, [int s = 200]) =>
       http.Response.bytes(utf8.encode(jsonEncode(o)), s, headers: {'content-type': 'application/json'});
@@ -103,7 +104,7 @@ class Servidor {
           'franja_almuerzo': {'inicio': '12:00', 'fin': '13:00'},
           'resumen_hoy': {'tiempo_jornada_min': 0, 'distancia_km': 0},
           'rastreo': {'distancia_m': 25, 'intervalo_seg': 120},
-          'ultima_verificacion': null,
+          'ultima_verificacion': verificacion,
         });
       case '/mi/ubicaciones':
         if (estadoUbicaciones != 200) return _json({'error': 'x', 'codigo': 'X'}, estadoUbicaciones);
@@ -131,6 +132,7 @@ void main() {
   late List<String> notificaciones;
   late Motor motor;
   late bool sesionCerrada;
+  late List<String> avisosHuella;
 
   setUp(() async {
     FlutterSecureStorage.setMockInitialValues({});
@@ -140,6 +142,7 @@ void main() {
     gps = GpsFalso()..reloj = () => ahora;
     notificaciones = [];
     sesionCerrada = false;
+    avisosHuella = [];
     final sesion = Sesion();
     await sesion.iniciar(access: 'a', refresh: 'r', tecnico: {'nombre': 'Juan'});
     motor = Motor(
@@ -150,6 +153,7 @@ void main() {
       notificar: (t, _) => notificaciones.add(t),
       reloj: () => ahora,
       alSesionCerrada: () => sesionCerrada = true,
+      alVerificacion: (id, s) => avisosHuella.add(id == null ? 'quitar' : 'mostrar $id ${s}s'),
     );
   });
 
@@ -293,6 +297,22 @@ void main() {
     await motor.tick();
     expect(motor.modo, ModoRastreo.fuera);
     expect(gps.escuchando, isFalse);
+  });
+
+  test('huella: avisa una vez por solicitud y quita el aviso al responder', () async {
+    servidor.verificacion = {
+      'id': 9, 'segundos_restantes': 170, 'solicitada_en': '2026-11-10T10:00:00-04:00',
+      'respondida_en': null, 'resultado': 'pendiente',
+    };
+    await motor.tick();
+    ahora = ahora.add(const Duration(seconds: 30));
+    await motor.tick(); // sigue pendiente: no repite el aviso
+    expect(avisosHuella, ['mostrar 9 170s']);
+
+    servidor.verificacion = {...servidor.verificacion!, 'resultado': 'exito', 'segundos_restantes': null};
+    ahora = ahora.add(const Duration(seconds: 30));
+    await motor.tick();
+    expect(avisosHuella, ['mostrar 9 170s', 'quitar']);
   });
 
   test('sesión vencida: se detiene y avisa', () async {

@@ -7,6 +7,14 @@ import '../modelos/perfil.dart';
 import '../rastreo/motor.dart';
 import 'api.dart';
 
+/// Verificación de huella que hay que responder ahora.
+class VerificacionPendiente {
+  const VerificacionPendiente(this.id, this.venceEn);
+
+  final int id;
+  final DateTime venceEn; // reloj del celular, calculado con los segundos que dio el servidor
+}
+
 /// Estado de la jornada y perfil del técnico para las pantallas.
 ///
 /// Consulta GET /mi/estado cada 30 s mientras la app está al frente (la jornada la abre o
@@ -24,6 +32,7 @@ class Datos extends ChangeNotifier {
   DateTime? actualizadoEn; // última respuesta correcta del servidor
   String? error; // mensaje si la última consulta falló
   EstadoRastreo? rastreo; // lo informa el servicio de rastreo (puntos por enviar, GPS)
+  VerificacionPendiente? verificacion;
   int? bateria;
 
   Timer? _timer;
@@ -50,6 +59,7 @@ class Datos extends ChangeNotifier {
     try {
       final j = await api.get('mi/estado') as Map<String, dynamic>;
       estado = EstadoJornada.fromJson(j);
+      _actualizarVerificacion();
       bateria = await _bateria();
       enLinea = true;
       actualizadoEn = DateTime.now();
@@ -60,6 +70,22 @@ class Datos extends ChangeNotifier {
     } finally {
       _consultando = false;
     }
+    _avisar();
+  }
+
+  void _actualizarVerificacion() {
+    final v = estado?.ultimaVerificacion;
+    if (v == null || !v.pendiente) {
+      verificacion = null;
+    } else if (verificacion?.id != v.id) {
+      // El plazo lo da el servidor en segundos: no depende de que el reloj del celular esté bien.
+      verificacion = VerificacionPendiente(v.id, DateTime.now().add(Duration(seconds: v.segundosRestantes!)));
+    }
+  }
+
+  /// La pantalla de verificación la respondió (o venció): no volver a pedirla.
+  void verificacionTerminada() {
+    verificacion = null;
     _avisar();
   }
 

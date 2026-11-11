@@ -75,7 +75,8 @@ Estado de la jornada actual (para la pantalla Inicio).
     "franja_almuerzo": { "inicio": "12:00", "fin": "13:00" },
     "resumen_hoy": { "tiempo_jornada_min": 263, "distancia_km": 37.4 },
     "rastreo": { "distancia_m": 25, "intervalo_seg": 120 },
-    "ultima_verificacion": { "solicitada_en": "…11:30…", "respondida_en": "…11:31…",
+    "ultima_verificacion": { "id": 88, "segundos_restantes": null,
+                             "solicitada_en": "…11:30…", "respondida_en": "…11:31…",
                              "resultado": "exito" }        // o null; pendiente | exito | no_realizada
   }
 ```
@@ -88,6 +89,10 @@ Estado de la jornada actual (para la pantalla Inicio).
 - `rastreo`: cómo debe capturar la app (configurable en el panel). Un punto cada vez que se
   mueve `distancia_m` metros **o** cada `intervalo_seg` segundos si está quieto (para que el
   panel sepa que sigue conectado). La app lo relee en cada sondeo.
+- `ultima_verificacion.segundos_restantes`: solo si está `pendiente` y vigente. La app arma la
+  cuenta regresiva con este número (no con su reloj) y muestra el aviso "Confirma tu identidad".
+  Las vencidas se cierran como `no_realizada` con alerta (worker cada minuto:
+  `cerrar_verificaciones_vencidas`; mi/estado también lo hace para quien consulta).
 
 ### POST /mi/ubicaciones
 Enviar puntos GPS (en lote; soporta los acumulados offline).

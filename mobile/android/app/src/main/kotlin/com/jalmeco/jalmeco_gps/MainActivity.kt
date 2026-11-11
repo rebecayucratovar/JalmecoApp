@@ -1,5 +1,6 @@
 package com.jalmeco.jalmeco_gps
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// FlutterFragmentActivity (no FlutterActivity): lo exige local_auth para mostrar la huella.
+class MainActivity : FlutterFragmentActivity()

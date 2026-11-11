@@ -8,10 +8,11 @@ import '../widgets/hojas_info.dart';
 
 /// Inicio: estado de la jornada (activa / almuerzo / fuera) y resumen del día.
 class InicioPantalla extends StatelessWidget {
-  const InicioPantalla({super.key, required this.datos, required this.verEstado});
+  const InicioPantalla({super.key, required this.datos, required this.verEstado, this.verificar});
 
   final Datos datos;
   final VoidCallback verEstado; // cambia a la pestaña Estado
+  final VoidCallback? verificar; // abre la verificación de huella pendiente
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +44,10 @@ class InicioPantalla extends StatelessWidget {
               const SizedBox(height: 14),
               Align(alignment: Alignment.centerLeft, child: ChipConexion(enLinea: datos.enLinea)),
               const SizedBox(height: 18),
+              if (datos.verificacion != null && verificar != null) ...[
+                _AvisoVerificacion(venceEn: datos.verificacion!.venceEn, alTocar: verificar!),
+                const SizedBox(height: 18),
+              ],
               if (e == null)
                 _SinDatos(error: datos.error, reintentar: datos.actualizar)
               else ...[
@@ -321,6 +326,45 @@ class _SinDatos extends StatelessWidget {
       const SizedBox(height: 14),
       OutlinedButton(onPressed: reintentar, child: const Text('Reintentar')),
     ]);
+  }
+}
+
+/// Verificación pendiente que el técnico dejó "para un momento".
+class _AvisoVerificacion extends StatelessWidget {
+  const _AvisoVerificacion({required this.venceEn, required this.alTocar});
+
+  final DateTime venceEn;
+  final VoidCallback alTocar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colores.aviso.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colores.aviso.withValues(alpha: 0.4)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.fingerprint, size: 36, color: Colores.aviso),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Confirma tu identidad', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+            Text('Antes de las ${hora(venceEn)}', style: const TextStyle(color: Colores.textoSuave)),
+          ]),
+        ),
+        FilledButton(
+          onPressed: alTocar,
+          style: FilledButton.styleFrom(
+            backgroundColor: Colores.aviso,
+            minimumSize: const Size(0, 44),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+          child: const Text('Verificar'),
+        ),
+      ]),
+    );
   }
 }
 

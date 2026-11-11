@@ -17,7 +17,7 @@ import 'package:jalmeco_gps/utils/formato.dart';
 const _estadoActiva = '''{"en_jornada": true, "jornada": {"inicio": "2026-11-10T08:02:00-04:00", "horario": "08:00–18:00"},
  "en_pausa_almuerzo": false, "franja_almuerzo": {"inicio": "12:00", "fin": "13:00"},
  "resumen_hoy": {"tiempo_jornada_min": 458, "distancia_km": 52.84}, "rastreo": {"distancia_m": 25, "intervalo_seg": 120},
- "ultima_verificacion": {"solicitada_en": "2026-11-10T11:30:00-04:00", "respondida_en": "2026-11-10T11:31:00-04:00", "resultado": "exito"}}''';
+ "ultima_verificacion": {"id": 3, "segundos_restantes": null, "solicitada_en": "2026-11-10T11:30:00-04:00", "respondida_en": "2026-11-10T11:31:00-04:00", "resultado": "exito"}}''';
 
 String _estado({bool enJornada = true, bool almuerzo = false}) => _estadoActiva
     .replaceFirst('"en_jornada": true', '"en_jornada": $enJornada')

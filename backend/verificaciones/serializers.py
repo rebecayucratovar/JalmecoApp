@@ -20,6 +20,9 @@ class ResponderVerificacionSerializer(serializers.Serializer):
 
 
 class UltimaVerificacionSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    # Solo si está pendiente y vigente: la app arma la cuenta regresiva con esto (no con su reloj)
+    segundos_restantes = serializers.IntegerField(allow_null=True)
     solicitada_en = serializers.DateTimeField()
     respondida_en = serializers.DateTimeField(allow_null=True)
     resultado = serializers.CharField()

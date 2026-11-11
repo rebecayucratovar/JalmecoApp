@@ -4,13 +4,26 @@ import 'rastreo.dart';
 enum FaseJornada { activa, almuerzo, fuera }
 
 class UltimaVerificacion {
-  const UltimaVerificacion({required this.solicitadaEn, this.respondidaEn, required this.resultado});
+  const UltimaVerificacion({
+    required this.id,
+    this.segundosRestantes,
+    required this.solicitadaEn,
+    this.respondidaEn,
+    required this.resultado,
+  });
 
+  final int id;
+  final int? segundosRestantes; // solo si está pendiente y vigente (lo calcula el servidor)
   final DateTime solicitadaEn;
   final DateTime? respondidaEn;
   final String resultado; // pendiente | exito | no_realizada
 
+  /// Hay que pedir la huella ahora.
+  bool get pendiente => resultado == 'pendiente' && (segundosRestantes ?? 0) > 0;
+
   factory UltimaVerificacion.fromJson(Map<String, dynamic> j) => UltimaVerificacion(
+        id: (j['id'] as num).toInt(),
+        segundosRestantes: (j['segundos_restantes'] as num?)?.toInt(),
         solicitadaEn: DateTime.parse(j['solicitada_en'] as String),
         respondidaEn: j['respondida_en'] == null ? null : DateTime.parse(j['respondida_en'] as String),
         resultado: j['resultado'] as String,
