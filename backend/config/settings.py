@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -100,10 +101,32 @@ DATABASES = {
 
 
 # Django REST Framework
+# Administrador y Tecnico son modelos propios (no el User de Django): la autenticación
+# JWT la resuelve usuarios.autenticacion.JWTUsuarioAuthentication.
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'usuarios.autenticacion.JWTUsuarioAuthentication',
     ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ),
+    'EXCEPTION_HANDLER': 'config.excepciones.manejador_excepciones',
+    # Limita intentos de login (el PIN es de solo 6 dígitos)
+    'DEFAULT_THROTTLE_RATES': {
+        'login': os.getenv('LOGIN_THROTTLE', '10/min'),
+    },
+    'UNAUTHENTICATED_USER': None,
+}
+
+# JWT (djangorestframework-simplejwt). Los tokens llevan los claims "uid" y "tipo".
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('JWT_ACCESS_MIN', '60'))),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.getenv('JWT_REFRESH_DIAS', '30'))),
+    'SIGNING_KEY': SECRET_KEY,
 }
 
 

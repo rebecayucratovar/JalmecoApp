@@ -7,6 +7,11 @@ from django.utils import timezone
 class Administrador(models.Model):
     """Usuario del panel web (tabla `administrador`)."""
 
+    # Para usarlo como request.user en DRF (no son columnas de la base)
+    TIPO_USUARIO = 'admin'
+    is_authenticated = True
+    is_anonymous = False
+
     id = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=120)
     email = models.EmailField(max_length=160, unique=True)
@@ -41,6 +46,11 @@ class Tecnico(models.Model):
     """Personal con la app móvil (tabla `tecnico`). Incluye a TODO el personal con celular."""
 
     Estado = TecnicoEstado
+
+    # Para usarlo como request.user en DRF (no son columnas de la base)
+    TIPO_USUARIO = 'tecnico'
+    is_authenticated = True
+    is_anonymous = False
 
     id = models.AutoField(primary_key=True)
     odoo_employee_id = models.IntegerField(unique=True, null=True, blank=True)  # hr.employee
