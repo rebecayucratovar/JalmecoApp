@@ -163,10 +163,13 @@ Datos del técnico y políticas (pantalla Perfil).
 ## 4. Endpoints del PANEL ADMIN (rol administrador)
 
 ### GET /mapa-en-vivo
-Posiciones actuales de todos los que están en jornada.
+Todo el personal activo (el panel lo consulta cada ~10 s).
 ```
-← { "actualizado_en": "…", "tecnicos": [ TecnicoResumen, … ] }
+← { "actualizado_en": "…", "tecnicos": [ TecnicoResumen + { "jornada_inicio": "…" | null }, … ] }
 ```
+- En jornada: con su última posición, batería y velocidad.
+- Fuera de jornada: `estado_actual: "fuera_jornada"` y **sin** `ultima_lat/lng/bateria/velocidad/
+  actualizacion` (null): fuera de la jornada no se muestra dónde estuvo (privacidad).
 
 ### GET /dashboard
 KPIs del inicio.

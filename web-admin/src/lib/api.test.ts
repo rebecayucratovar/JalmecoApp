@@ -34,7 +34,7 @@ describe('Api', () => {
     const almacen = memoria({ access: 'viejo', refresh: 'r1', admin })
     const f = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.endsWith('auth/refresh')) return json({ access: 'nuevo' })
-      const auth = (init?.headers as Record<string, string>).Authorization
+      const auth = (init?.headers as Record<string, string> | undefined)?.Authorization
       return auth === 'Bearer nuevo' ? json({ ok: true }) : json({ error: 'Token vencido' }, 401)
     })
     const api = new Api(almacen, { fetch: f as unknown as typeof fetch })

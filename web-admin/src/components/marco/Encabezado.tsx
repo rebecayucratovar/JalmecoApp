@@ -1,5 +1,4 @@
 import { BellIcon, ChevronDownIcon, LogOutIcon, MenuIcon, MoonIcon, SunIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -16,19 +15,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { fechaEncabezado, iniciales } from '@/lib/formato'
 import { useSesion } from '@/lib/sesion'
 import { useTema } from '@/lib/tema'
-
-/** Fecha y hora de La Paz, al minuto. */
-function useAhora() {
-  const [ahora, setAhora] = useState(() => new Date())
-  useEffect(() => {
-    const t = setInterval(() => setAhora(new Date()), 15_000)
-    return () => clearInterval(t)
-  }, [])
-  return ahora
-}
+import { useAhora } from '@/lib/useAhora'
 
 export function Encabezado({ titulo, alAbrirMenu }: { titulo: string; alAbrirMenu: () => void }) {
-  const ahora = useAhora()
+  const ahora = useAhora(15_000)
   const { admin, cerrar } = useSesion()
   const { efectivo, cambiar } = useTema()
   const oscuro = efectivo === 'oscuro'

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
+import { Loader2Icon } from 'lucide-react'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 
 import { Marco } from '@/components/marco/Marco'
@@ -12,13 +13,32 @@ import { LoginPagina } from '@/paginas/LoginPagina'
 import { NoEncontrada, Proximamente } from '@/paginas/Proximamente'
 import { SECCIONES } from '@/secciones'
 
+// Pantallas pesadas (p. ej. el mapa con Leaflet) se cargan recién al abrirlas
+const MapaPagina = lazy(() => import('@/paginas/mapa/MapaPagina'))
+
+function Cargando() {
+  return (
+    <div className="flex h-full items-center justify-center text-muted-foreground">
+      <Loader2Icon className="size-5 animate-spin" aria-label="Cargando" />
+    </div>
+  )
+}
+
+const diferida = (pantalla: ReactNode) => <Suspense fallback={<Cargando />}>{pantalla}</Suspense>
+
+/** Secciones ya construidas (las demás muestran "en construcción"). */
+const PANTALLAS: Record<string, ReactNode> = {
+  '/mapa': diferida(<MapaPagina />),
+}
+
 const router = createBrowserRouter([
   { path: '/login', element: <LoginPagina /> },
   {
     element: <Marco />,
     children: [
       // Cada sección reemplaza su <Proximamente /> al construirse
-      ...SECCIONES.map((s) => ({ path: s.ruta, element: <Proximamente /> })),
+      ...SECCIONES.map((s) => ({ path: s.ruta, element: PANTALLAS[s.ruta] ?? <Proximamente /> })),
+      { path: '/tecnicos/:id', element: <Proximamente /> }, // ficha y recorrido (paso 4)
       { path: '*', element: <NoEncontrada /> },
     ],
   },

@@ -29,6 +29,26 @@ class RespuestaUbicacionesSerializer(serializers.Serializer):
     rechazados = serializers.IntegerField()
 
 
+# Lo que NO se muestra de quien está fuera de jornada (solo se rastrea en jornada)
+CAMPOS_PRIVADOS = ['ultima_lat', 'ultima_lng', 'ultima_bateria', 'ultima_velocidad', 'ultima_actualizacion']
+
+
+class TecnicoMapaSerializer(TecnicoResumenSerializer):
+    """TecnicoResumen + desde cuándo está en jornada. Fuera de jornada: sin ubicación."""
+
+    jornada_inicio = serializers.DateTimeField(allow_null=True)
+
+    class Meta(TecnicoResumenSerializer.Meta):
+        fields = TecnicoResumenSerializer.Meta.fields + ['jornada_inicio']
+
+    def to_representation(self, tecnico):
+        datos = super().to_representation(tecnico)
+        if not getattr(tecnico, 'en_jornada', False):
+            datos['estado_actual'] = 'fuera_jornada'
+            datos.update({campo: None for campo in CAMPOS_PRIVADOS})
+        return datos
+
+
 class MapaEnVivoSerializer(serializers.Serializer):
     actualizado_en = serializers.DateTimeField()
-    tecnicos = TecnicoResumenSerializer(many=True)
+    tecnicos = TecnicoMapaSerializer(many=True)
