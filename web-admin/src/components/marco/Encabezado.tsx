@@ -1,4 +1,5 @@
-import { ChevronDownIcon, LogOutIcon, MenuIcon, MoonIcon, SunIcon } from 'lucide-react'
+import { ChevronDownIcon, LogOutIcon, MenuIcon, MoonIcon, SunIcon, UserCogIcon } from 'lucide-react'
+import { Link } from 'react-router'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -77,6 +78,12 @@ export function Encabezado({ titulo, alAbrirMenu }: { titulo: string; alAbrirMen
             <span className="block truncate text-xs text-muted-foreground">{admin?.email}</span>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link to="/configuracion?seccion=cuenta">
+              <UserCogIcon />
+              Mi cuenta
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={cerrar}>
             <LogOutIcon />
             Cerrar sesión

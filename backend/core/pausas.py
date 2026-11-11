@@ -28,6 +28,11 @@ def franja_almuerzo(franjas):
     return franjas[0] if franjas else None
 
 
+def almuerzo_configurado():
+    """La franja del almuerzo que se edita desde Configuración (la activa o, si no hay, la de ese nombre)."""
+    return franja_almuerzo(franjas_activas())         or FranjaPausa.objects.filter(nombre__iexact='almuerzo').order_by('id').first()
+
+
 # ---- Ayudas de "hora del día" (para el worker) ----
 
 def hoy_a_las(momento, hora):

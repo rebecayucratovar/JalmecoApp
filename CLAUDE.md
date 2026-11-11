@@ -53,7 +53,8 @@ Flutter NO va en Docker. Backend + DB sí (incluye las librerías de mapas GDAL/
 
 ## Modelo de datos (resumen)
 
-- **administrador:** login del panel (email + password_hash).
+- **administrador:** login del panel (email + password_hash). Cambiar la contraseña
+  (`password_cambiado_en`) cierra las demás sesiones (mismo mecanismo que el PIN).
 - **tecnico:** login de la app (usuario + pin_hash). Vinculado a Odoo por `odoo_employee_id`.
   El usuario es el de Odoo; si no tiene, su código JAL-XXXX (el login acepta ambos).
   `pin_hash` NULL = "Sin PIN"; `pin_generado_en`. El PIN lo genera el admin (se muestra una sola
@@ -110,8 +111,8 @@ alerta; si luego llega otro `equipo_id` → alerta `cambio_equipo`. Sin IMEI (An
   almuerzo no cuenta; 30 min por defecto porque en el ducto del ascensor se pierde la señal hasta
   ~30 min); cada 5 min "Batería baja" (`bateria_baja_pct`, 1 por jornada); cada 1 min un correo
   con las alertas nuevas a `alertas_correos` (vacío = admins activos; SMTP en `.env`); cada 24 h
-  la retención. Pendiente: sincronización con Odoo. Mientras no exista el panel, la
-  configuración se edita en el admin de Django (/admin).
+  la retención. Pendiente: sincronización con Odoo. La configuración se edita en el panel
+  (Configuración); el admin de Django (/admin) queda como respaldo.
 - **Retención:** borrar ubicaciones/recorridos más viejos que **12 meses** (configurable).
   El mismo valor se muestra en la app y en el admin. La asistencia vive en Odoo y no se toca.
 

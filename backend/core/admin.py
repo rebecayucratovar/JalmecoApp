@@ -5,7 +5,7 @@ from .models import Configuracion, FranjaPausa
 
 @admin.register(Configuracion)
 class ConfiguracionAdmin(admin.ModelAdmin):
-    """Mientras no exista la pantalla de Configuración del panel web."""
+    """Respaldo: lo normal es editarla en el panel web (Configuración)."""
 
     readonly_fields = ['odoo_ultima_sync_ok']
     fieldsets = [

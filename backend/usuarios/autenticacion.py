@@ -40,17 +40,21 @@ def cargar_usuario(tipo, uid):
 
 def sesion_revocada(usuario, token):
     """
-    True si el token es anterior al último PIN generado: al reiniciar el PIN de un técnico,
-    las sesiones abiertas con el anterior dejan de valer (el access hereda el `iat` del refresh).
+    True si el token es anterior al último cambio de credencial: al reiniciar el PIN de un técnico
+    o cambiar la contraseña de un administrador, las sesiones abiertas antes dejan de valer
+    (el access hereda el `iat` del refresh).
     """
-    generado = getattr(usuario, 'pin_generado_en', None)
+    cambio = getattr(usuario, 'pin_generado_en', None) or getattr(usuario, 'password_cambiado_en', None)
     emitido = token.get('iat')
-    return bool(generado and emitido is not None and emitido < int(generado.timestamp()))
+    return bool(cambio and emitido is not None and emitido < int(cambio.timestamp()))
 
 
-def _revocada():
-    return exceptions.AuthenticationFailed(
-        'Tu PIN fue reiniciado. Vuelve a iniciar sesión con el PIN nuevo.', code='sesion_revocada')
+def _revocada(usuario):
+    if getattr(usuario, 'TIPO_USUARIO', None) == TIPO_ADMIN:
+        mensaje = 'Tu contraseña cambió. Vuelve a iniciar sesión con la nueva.'
+    else:
+        mensaje = 'Tu PIN fue reiniciado. Vuelve a iniciar sesión con el PIN nuevo.'
+    return exceptions.AuthenticationFailed(mensaje, code='sesion_revocada')
 
 
 def renovar_access(refresh_str):
@@ -63,7 +67,7 @@ def renovar_access(refresh_str):
     if usuario is None:
         raise exceptions.AuthenticationFailed('Usuario inexistente o inactivo.', code='usuario_inactivo')
     if sesion_revocada(usuario, refresh):
-        raise _revocada()
+        raise _revocada(usuario)
     return str(refresh.access_token)
 
 
@@ -91,7 +95,7 @@ class JWTUsuarioAuthentication(BaseAuthentication):
         if usuario is None:
             raise exceptions.AuthenticationFailed('Usuario inexistente o inactivo.', code='usuario_inactivo')
         if sesion_revocada(usuario, token):
-            raise _revocada()
+            raise _revocada(usuario)
         return (usuario, token)
 
     def authenticate_header(self, request):

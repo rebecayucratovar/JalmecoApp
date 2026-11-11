@@ -2,11 +2,14 @@
 from django.urls import path
 
 from alertas.views import AlertasView, AtenderAlertaView, AtenderTodasView, ResumenAlertasView
+from core.views import ConfiguracionView
 from jornadas.views import MiEstadoView
+from odoo_sync.views import OdooEstadoView, OdooProbarView
 from ubicaciones.views import MapaEnVivoView, MisUbicacionesView, RecorridoView
 from usuarios.views import (
     LoginAdminView, LoginTecnicoView, MiDispositivoView, MiPerfilView, MiSeguimientoDetenidoView, RefreshView,
 )
+from usuarios.cuenta import MiCuentaView, MiPasswordView
 from usuarios.panel import TecnicoPinView, TecnicosView, TecnicoView
 from verificaciones.views import MiResponderVerificacionView, MiVerificacionPendienteView
 
@@ -36,4 +39,9 @@ urlpatterns = [
     path('alertas/resumen', ResumenAlertasView.as_view(), name='alertas-resumen'),
     path('alertas/atender-todas', AtenderTodasView.as_view(), name='alertas-atender-todas'),
     path('alertas/<int:pk>/atender', AtenderAlertaView.as_view(), name='alerta-atender'),
+    path('config', ConfiguracionView.as_view(), name='config'),
+    path('odoo/estado', OdooEstadoView.as_view(), name='odoo-estado'),
+    path('odoo/probar', OdooProbarView.as_view(), name='odoo-probar'),
+    path('mi-cuenta', MiCuentaView.as_view(), name='mi-cuenta'),
+    path('mi-cuenta/password', MiPasswordView.as_view(), name='mi-cuenta-password'),
 ]

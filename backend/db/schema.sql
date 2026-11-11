@@ -19,7 +19,8 @@ CREATE TABLE administrador (
     email          VARCHAR(160)  NOT NULL UNIQUE,
     password_hash  VARCHAR(255)  NOT NULL,
     activo         BOOLEAN       NOT NULL DEFAULT TRUE,
-    creado_en      TIMESTAMPTZ   NOT NULL DEFAULT now()
+    creado_en      TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    password_cambiado_en TIMESTAMPTZ           -- sesiones anteriores dejan de valer
 );
 
 -- ---------------------------------------------------------------------

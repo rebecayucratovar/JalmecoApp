@@ -78,6 +78,12 @@ export class Api {
     this.almacen.guardar(null)
   }
 
+  /** Cambia datos de la sesión abierta (nombre/correo editados, tokens nuevos tras cambiar la contraseña). */
+  actualizarSesion(cambios: Partial<DatosSesion>) {
+    const actual = this.almacen.leer()
+    if (actual) this.almacen.guardar({ ...actual, ...cambios })
+  }
+
   get<T>(ruta: string, senal?: AbortSignal) {
     return this.pedir<T>(ruta, { senal })
   }
@@ -163,4 +169,14 @@ export class Api {
         : `No se pudo completar la acción (${respuesta.status}).`)
     throw new ApiError(mensaje, respuesta.status, cuerpo.codigo ?? null, cuerpo.detalle)
   }
+}
+
+/** Errores por campo de una respuesta 400 ({ detalle: { campo: ["mensaje"] } }) → { campo: "mensaje" }. */
+export function erroresPorCampo(error: unknown): Record<string, string> {
+  if (!(error instanceof ApiError) || typeof error.detalle !== 'object' || error.detalle == null) return {}
+  const salida: Record<string, string> = {}
+  for (const [campo, mensajes] of Object.entries(error.detalle as Record<string, unknown>)) {
+    salida[campo] = Array.isArray(mensajes) ? String(mensajes[0]) : String(mensajes)
+  }
+  return salida
 }

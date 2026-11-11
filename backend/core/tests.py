@@ -191,3 +191,52 @@ class CorreoAlertasTest(Base):
         self.alerta(lp(11, 9, 59), estado=Alerta.Estado.ATENDIDA)
         self.assertEqual(enviar_pendientes(lp(11, 10)), 0)
         self.assertEqual(mail.outbox, [])
+
+
+class ConfiguracionPanelTest(TestCase):
+    """GET/PUT /config desde el panel."""
+
+    def setUp(self):
+        from core.models import FranjaPausa
+        from usuarios.autenticacion import emitir_tokens
+        admin = Administrador.objects.create(nombre='Ana', email='ana@jalmeco.com', password_hash='x')
+        self.auth = {'HTTP_AUTHORIZATION': f'Bearer {emitir_tokens(admin)["access"]}'}
+        FranjaPausa.objects.all().delete()
+        self.almuerzo = FranjaPausa.objects.create(nombre='Almuerzo', hora_inicio='12:00', hora_fin='13:00')
+
+    def put(self, datos):
+        return self.client.put('/api/v1/config', datos, content_type='application/json', **self.auth)
+
+    def test_lee_con_almuerzo_y_destinatarios(self):
+        r = self.client.get('/api/v1/config', **self.auth).json()
+        self.assertEqual((r['horario_inicio'], r['horario_fin']), ('08:00', '18:00'))
+        self.assertEqual(r['almuerzo'], {'inicio': '12:00', 'fin': '13:00'})
+        self.assertEqual(r['alertas_destinatarios'], ['ana@jalmeco.com'])  # vacío = administradores
+
+    def test_guarda_solo_lo_enviado_y_normaliza_correos(self):
+        r = self.put({'sin_conexion_min': 45, 'alertas_correos': 'Jefe@Jalmeco.com; otro@x.com\nJEFE@jalmeco.com',
+                      'almuerzo': {'inicio': '12:30', 'fin': '13:30'}})
+        self.assertEqual(r.status_code, 200, r.content)
+        datos = r.json()
+        self.assertEqual(datos['sin_conexion_min'], 45)
+        self.assertEqual(datos['bateria_baja_pct'], 15)
+        self.assertEqual(datos['alertas_correos'], 'jefe@jalmeco.com, otro@x.com')
+        self.assertEqual(datos['almuerzo'], {'inicio': '12:30', 'fin': '13:30'})
+        self.almuerzo.refresh_from_db()
+        self.assertEqual(f'{self.almuerzo.hora_inicio:%H:%M}', '12:30')
+
+    def test_valida_rangos_horario_y_almuerzo(self):
+        def errores(datos):
+            r = self.put(datos)
+            self.assertEqual(r.status_code, 400)
+            return set(r.json()['detalle'])
+        self.assertEqual(errores({'gps_distancia_m': 1}), {'gps_distancia_m'})
+        self.assertEqual(errores({'horario_inicio': '18:00', 'horario_fin': '08:00'}), {'horario_fin'})
+        self.assertEqual(errores({'almuerzo': {'inicio': '19:00', 'fin': '20:00'}}), {'almuerzo'})
+        self.assertEqual(errores({'horario_fin': '12:30'}), {'almuerzo'})  # dejaría el almuerzo afuera
+        self.assertEqual(errores({'alertas_correos': 'no-es-correo'}), {'alertas_correos'})
+        self.assertEqual(errores({'almuerzo': None}), {'almuerzo'})  # no se puede quitar
+        self.assertEqual(Configuracion.actual().gps_distancia_m, 25)
+
+    def test_solo_admin(self):
+        self.assertEqual(self.client.get('/api/v1/config').status_code, 401)

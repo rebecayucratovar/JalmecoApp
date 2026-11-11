@@ -273,25 +273,53 @@ Marca una como atendida (← la alerta) o varias: `{ "ids": [1, 2] }`; sin `ids`
 (← `{ "atendidas": 2 }`). Guarda quién y cuándo.
 
 ### GET /config  ·  PUT /config
-Configuración: horario laboral, almuerzo, retención (meses), verificación (por día, límite min),
-captura GPS (`gps_distancia_m`, `gps_intervalo_seg`), umbrales de alertas (`sin_conexion_min`: 30,
-`bateria_baja_pct`: 15), destinatarios del correo de alertas (`alertas_correos`, separados por
-coma; vacío = administradores activos) y Odoo (`odoo_sync_min`: 1 o 2 min).
-
-### GET /odoo/estado  ·  POST /odoo/sincronizar
-Estado de la integración y disparar una sincronización manual.
+Configuración del sistema (pantalla Configuración). `PUT` acepta solo los campos que cambian.
 ```
-← { "ultima_sync_ok": "…16:31…",          // "Última sincronización: hace 1 min"
+← { "horario_inicio": "08:00", "horario_fin": "18:00",
+    "almuerzo": { "inicio": "12:00", "fin": "13:00" },   // franja de pausa "Almuerzo"
+    "verificaciones_por_dia": 2,      // 1–4
+    "verificacion_limite_min": 3,     // 1–15
+    "gps_distancia_m": 25,            // 5–500
+    "gps_intervalo_seg": 120,         // 30–900
+    "sin_conexion_min": 30,           // 3–120
+    "bateria_baja_pct": 15,           // 5–50
+    "alertas_correos": "a@x.com, b@x.com",   // vacío = administradores activos
+    "alertas_destinatarios": ["a@x.com", "b@x.com"],   // solo lectura: a quién llegan hoy
+    "correo_activo": false,           // solo lectura: hay SMTP en backend/.env
+    "retencion_meses": 12,            // 1–36
+    "odoo_sync_min": 2,               // 1 o 2
+    "espejo_odoo_min": 8 }            // 5–60
+```
+- El horario debe terminar después de empezar y el almuerzo quedar dentro de él. El almuerzo no
+  se puede quitar (privacidad). Los correos se aceptan separados por coma, punto y coma o líneas
+  y se guardan normalizados (máx. 10).
+
+### GET /odoo/estado  ·  POST /odoo/probar
+Estado de la integración (nunca devuelve la clave API) y prueba de conexión (solo lectura).
+```
+← { "url": "https://jalmeco.odoo.com", "db": "…", "usuario": null,
+    "faltan": ["ODOO_USUARIO", "ODOO_API_KEY"],   // variables vacías en backend/.env
+    "ultima_sync_ok": "…16:31…",
     "historial": [
-      { "fecha": "…16:30…", "tipo": "asistencia", "resultado": "ok", "registros": 2 },
-      { "fecha": "…15:45…", "tipo": "asistencia", "resultado": "error",
-        "mensaje": "Tiempo de espera agotado, reintentado" } ] }
+      { "id": 1, "fecha": "…16:30…", "tipo": "asistencia", "resultado": "ok", "registros": 2, "mensaje": null },
+      { "id": 2, "fecha": "…15:45…", "tipo": "asistencia", "resultado": "error", "registros": 0,
+        "mensaje": "Tiempo de espera agotado" } ] }     // las últimas 20
+
+POST /odoo/probar  ← { "ok": true, "version": "17.0+e", "mensaje": "Conectado como …" }
+                   ← { "ok": false, "mensaje": "Usuario o clave API incorrectos…" }
 ```
 - El historial solo guarda corridas **con registros** o **con error**; las vacías solo pisan
-  `ultima_sync_ok`.
+  `ultima_sync_ok`. La sincronización manual llegará con la sincronización del worker.
 
 ### GET /mi-cuenta  ·  PUT /mi-cuenta  ·  POST /mi-cuenta/password
-Datos del administrador y cambio de contraseña.
+```
+GET/PUT /mi-cuenta  → { nombre?, email? }   ← { "id": 1, "nombre": "…", "email": "…" }
+POST /mi-cuenta/password  → { "actual": "…", "nueva": "…" }   ← { "access": "…", "refresh": "…" }
+```
+- La nueva contraseña pasa los validadores de Django (8+ caracteres, no común, no solo números,
+  no parecida al correo). Máx. 10 intentos por hora.
+- Al cambiarla, los tokens emitidos antes dejan de valer (401 `SESION_REVOCADA`) en todos los
+  equipos; la respuesta trae tokens nuevos para seguir en el actual.
 
 ---
 

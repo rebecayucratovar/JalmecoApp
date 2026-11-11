@@ -18,6 +18,8 @@ class Administrador(models.Model):
     password_hash = models.CharField(max_length=255)
     activo = models.BooleanField(default=True)
     creado_en = models.DateTimeField(default=timezone.now)
+    # Al cambiar la contraseña, las sesiones abiertas antes dejan de valer (ver autenticacion.py)
+    password_cambiado_en = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'administrador'
@@ -30,6 +32,7 @@ class Administrador(models.Model):
     def set_password(self, raw_password):
         """Guarda la contraseña cifrada (nunca en texto plano)."""
         self.password_hash = make_password(raw_password)
+        self.password_cambiado_en = timezone.now()
 
     def check_password(self, raw_password):
         return check_password(raw_password, self.password_hash)

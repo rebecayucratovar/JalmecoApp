@@ -114,3 +114,47 @@ class PinTest(Base):
             pin = generar_pin()
             self.assertNotIn(pin, {'000000', '111111', '123456', '654321', '234567'})
             self.assertEqual(len(pin), 6)
+
+
+class MiCuentaTest(TestCase):
+    """Datos del administrador y cambio de contraseña (cierra las demás sesiones)."""
+
+    def setUp(self):
+        from rest_framework_simplejwt.tokens import AccessToken
+        self.admin = Administrador(nombre='Ana', email='ana@jalmeco.com')
+        self.admin.set_password('ClaveVieja2026')
+        self.admin.password_cambiado_en = None
+        self.admin.save()
+        Administrador.objects.create(nombre='Otro', email='otro@jalmeco.com', password_hash='x')
+        # Sesión abierta hace un minuto (antes del cambio de contraseña)
+        token = AccessToken()
+        token['uid'], token['tipo'] = self.admin.pk, 'admin'
+        token['iat'] = int(timezone.now().timestamp()) - 60
+        self.auth = {'HTTP_AUTHORIZATION': f'Bearer {token}'}
+
+    def test_lee_y_edita_datos(self):
+        self.assertEqual(self.client.get('/api/v1/mi-cuenta', **self.auth).json()['email'], 'ana@jalmeco.com')
+        r = self.client.put('/api/v1/mi-cuenta', {'nombre': '  Ana  María ', 'email': 'ANA.M@jalmeco.com'},
+                            content_type='application/json', **self.auth)
+        self.assertEqual(r.json(), {'id': self.admin.pk, 'nombre': 'Ana María', 'email': 'ana.m@jalmeco.com'})
+        r = self.client.put('/api/v1/mi-cuenta', {'email': 'otro@jalmeco.com'}, content_type='application/json', **self.auth)
+        self.assertEqual(set(r.json()['detalle']), {'email'})
+
+    def test_cambio_de_password(self):
+        def cambiar(actual, nueva):
+            return self.client.post('/api/v1/mi-cuenta/password', {'actual': actual, 'nueva': nueva},
+                                    content_type='application/json', **self.auth)
+        self.assertEqual(set(cambiar('mal', 'OtraClave2026!').json()['detalle']), {'actual'})
+        self.assertEqual(set(cambiar('ClaveVieja2026', '123').json()['detalle']), {'nueva'})
+        self.assertEqual(set(cambiar('ClaveVieja2026', 'ClaveVieja2026').json()['detalle']), {'nueva'})
+
+        r = cambiar('ClaveVieja2026', 'Ascensor-Norte-77')
+        self.assertEqual(r.status_code, 200, r.content)
+        nuevo = r.json()['access']
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.check_password('Ascensor-Norte-77'))
+        # Las sesiones anteriores al cambio dejan de valer; esta sigue con el token nuevo
+        viejo = self.client.get('/api/v1/mi-cuenta', **self.auth)
+        self.assertEqual((viejo.status_code, viejo.json()['codigo']), (401, 'SESION_REVOCADA'))
+        self.assertIn('contraseña', viejo.json()['error'])
+        self.assertEqual(self.client.get('/api/v1/mi-cuenta', HTTP_AUTHORIZATION=f'Bearer {nuevo}').status_code, 200)

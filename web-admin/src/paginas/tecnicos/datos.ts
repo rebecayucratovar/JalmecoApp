@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { ApiError } from '@/lib/api'
 import type { EstadoTecnico } from '@/lib/estados'
 import { normalizar } from '@/lib/formato'
 import { useSesion } from '@/lib/sesion'
@@ -89,14 +88,7 @@ export function useGenerarPin(id: number) {
 }
 
 /** Errores por campo que devuelve el backend (400 DATOS_INVALIDOS → detalle). */
-export function erroresPorCampo(error: unknown): Record<string, string> {
-  if (!(error instanceof ApiError) || typeof error.detalle !== 'object' || error.detalle == null) return {}
-  const salida: Record<string, string> = {}
-  for (const [campo, mensajes] of Object.entries(error.detalle as Record<string, unknown>)) {
-    salida[campo] = Array.isArray(mensajes) ? String(mensajes[0]) : String(mensajes)
-  }
-  return salida
-}
+export { erroresPorCampo } from '@/lib/api'
 
 /** "+591 71245830" → "+591 712 45830". */
 export function formatoCelular(numero: string | null): string {

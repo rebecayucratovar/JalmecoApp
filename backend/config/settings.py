@@ -119,6 +119,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'login_usuario': os.getenv('LOGIN_LIMITE_USUARIO', '10/hour'),
         'login_ip': os.getenv('LOGIN_LIMITE_IP', '60/min'),
+        'cambio_password': '10/hour',
     },
     'UNAUTHENTICATED_USER': None,
 }

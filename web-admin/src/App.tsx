@@ -18,6 +18,7 @@ const MapaPagina = lazy(() => import('@/paginas/mapa/MapaPagina'))
 const TecnicosPagina = lazy(() => import('@/paginas/tecnicos/TecnicosPagina'))
 const TecnicoPagina = lazy(() => import('@/paginas/tecnicos/TecnicoPagina'))
 const AlertasPagina = lazy(() => import('@/paginas/alertas/AlertasPagina'))
+const ConfiguracionPagina = lazy(() => import('@/paginas/configuracion/ConfiguracionPagina'))
 
 function Cargando() {
   return (
@@ -34,6 +35,7 @@ const PANTALLAS: Record<string, ReactNode> = {
   '/mapa': diferida(<MapaPagina />),
   '/tecnicos': diferida(<TecnicosPagina />),
   '/alertas': diferida(<AlertasPagina />),
+  '/configuracion': diferida(<ConfiguracionPagina />),
 }
 
 const router = createBrowserRouter([
