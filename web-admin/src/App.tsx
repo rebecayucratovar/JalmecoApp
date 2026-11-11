@@ -14,6 +14,7 @@ import { NoEncontrada, Proximamente } from '@/paginas/Proximamente'
 import { SECCIONES } from '@/secciones'
 
 // Pantallas pesadas (p. ej. el mapa con Leaflet) se cargan recién al abrirlas
+const InicioPagina = lazy(() => import('@/paginas/inicio/InicioPagina'))
 const MapaPagina = lazy(() => import('@/paginas/mapa/MapaPagina'))
 const TecnicosPagina = lazy(() => import('@/paginas/tecnicos/TecnicosPagina'))
 const TecnicoPagina = lazy(() => import('@/paginas/tecnicos/TecnicoPagina'))
@@ -32,6 +33,7 @@ const diferida = (pantalla: ReactNode) => <Suspense fallback={<Cargando />}>{pan
 
 /** Secciones ya construidas (las demás muestran "en construcción"). */
 const PANTALLAS: Record<string, ReactNode> = {
+  '/': diferida(<InicioPagina />),
   '/mapa': diferida(<MapaPagina />),
   '/tecnicos': diferida(<TecnicosPagina />),
   '/alertas': diferida(<AlertasPagina />),

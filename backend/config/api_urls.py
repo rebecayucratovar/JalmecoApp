@@ -2,6 +2,7 @@
 from django.urls import path
 
 from alertas.views import AlertasView, AtenderAlertaView, AtenderTodasView, ResumenAlertasView
+from core.inicio import DashboardView
 from core.views import ConfiguracionView
 from jornadas.views import MiEstadoView
 from odoo_sync.views import OdooEstadoView, OdooProbarView
@@ -30,6 +31,7 @@ urlpatterns = [
          name='mi-verificacion-responder'),
 
     # Panel admin (rol administrador)
+    path('dashboard', DashboardView.as_view(), name='dashboard'),
     path('mapa-en-vivo', MapaEnVivoView.as_view(), name='mapa-en-vivo'),
     path('tecnicos', TecnicosView.as_view(), name='tecnicos'),
     path('tecnicos/<int:pk>', TecnicoView.as_view(), name='tecnico'),

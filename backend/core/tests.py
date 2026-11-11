@@ -240,3 +240,49 @@ class ConfiguracionPanelTest(TestCase):
 
     def test_solo_admin(self):
         self.assertEqual(self.client.get('/api/v1/config').status_code, 401)
+
+
+class DashboardTest(TestCase):
+    """GET /dashboard — resumen de Inicio."""
+
+    def setUp(self):
+        from core.models import FranjaPausa
+        from usuarios.autenticacion import emitir_tokens
+        admin = Administrador.objects.create(nombre='Ana', email='ana@jalmeco.com', password_hash='x')
+        self.auth = {'HTTP_AUTHORIZATION': f'Bearer {emitir_tokens(admin)["access"]}'}
+        FranjaPausa.objects.all().delete()
+        FranjaPausa.objects.create(nombre='Almuerzo', hora_inicio='12:00', hora_fin='13:00')
+
+    def test_resumen_y_atencion_sin_ubicacion(self):
+        from django.utils import timezone
+        ahora = timezone.now()
+        juan = Tecnico.objects.create(usuario='juan', nombre='Juan', estado_actual='sin_conexion',
+                                      ultima_bateria=9, ultima_lat=-16.5, ultima_lng=-68.1)
+        luis = Tecnico.objects.create(usuario='luis', nombre='Luis', estado_actual='en_trayecto', ultima_bateria=80)
+        Tecnico.objects.create(usuario='eva', nombre='Eva', estado_actual='en_parada')  # fuera de jornada
+        Tecnico.objects.create(usuario='baja', nombre='Baja', activo=False)
+        Jornada.objects.create(tecnico=juan, inicio=ahora - timedelta(minutes=30))
+        Jornada.objects.create(tecnico=luis, inicio=ahora - timedelta(minutes=10))
+        Alerta.objects.create(tecnico=juan, tipo=Alerta.Tipo.SIN_CONEXION, nivel=Alerta.Nivel.CRITICO)
+
+        r = self.client.get('/api/v1/dashboard', **self.auth).json()
+        p = r['personal']
+        self.assertEqual((p['activos'], p['en_jornada'], p['en_trayecto'], p['sin_conexion'], p['sin_pin']), (3, 2, 1, 1, 3))
+        self.assertEqual((r['alertas']['nuevas'], r['alertas']['criticas']), (1, 1))
+        self.assertEqual(len(r['atencion']), 1)
+        self.assertEqual(r['atencion'][0]['motivos'], ['sin_conexion', 'bateria_baja'])
+        self.assertNotIn('ultima_lat', r['atencion'][0])
+        self.assertEqual(len(r['horas_campo']), 7)
+
+    def test_horas_en_campo_sin_almuerzo_y_cortadas_por_dia(self):
+        from core.inicio import horas_en_campo
+        from core.pausas import franjas_activas
+        t = Tecnico.objects.create(usuario='juan', nombre='Juan')
+        Jornada.objects.create(tecnico=t, inicio=lp(10, 8), fin=lp(10, 18), estado='cerrada')  # 10 h − 1 almuerzo
+        Jornada.objects.create(tecnico=t, inicio=lp(11, 8), fin=None)  # abierta: hasta "ahora"
+        dias = horas_en_campo(lp(9, 0).date(), lp(11, 0).date(), lp(11, 10, 30), franjas_activas())
+        self.assertEqual(dias, [
+            {'fecha': '2026-11-09', 'horas': 0, 'personas': 0},
+            {'fecha': '2026-11-10', 'horas': 9.0, 'personas': 1},
+            {'fecha': '2026-11-11', 'horas': 2.5, 'personas': 1},
+        ])

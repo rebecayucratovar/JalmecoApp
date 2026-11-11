@@ -1,6 +1,6 @@
 import { EyeIcon, Loader2Icon, MapPinIcon, PlusIcon, SearchIcon, TriangleAlertIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 
 import { AvatarEstado, EstadoChip } from '@/components/EstadoChip'
 import { Button } from '@/components/ui/button'
@@ -26,7 +26,9 @@ export default function TecnicosPagina() {
   const navegar = useNavigate()
   const [busqueda, setBusqueda] = useState('')
   const [estado, setEstado] = useState<EstadoTecnico | 'todos'>('todos')
-  const [vista, setVista] = useState<Vista>('activos')
+  // Se puede abrir en una vista (p. ej. /tecnicos?vista=sin_pin desde Inicio)
+  const [params] = useSearchParams()
+  const [vista, setVista] = useState<Vista>(() => VISTAS.find((v) => v.valor === params.get('vista'))?.valor ?? 'activos')
   const [creando, setCreando] = useState(false)
 
   const todos = useMemo(() => consulta.data ?? [], [consulta.data])
