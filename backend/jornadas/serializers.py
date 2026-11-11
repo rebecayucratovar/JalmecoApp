@@ -1,5 +1,8 @@
 from rest_framework import serializers
 
+from usuarios.serializers import RastreoSerializer
+from verificaciones.serializers import UltimaVerificacionSerializer
+
 
 class JornadaActualSerializer(serializers.Serializer):
     inicio = serializers.DateTimeField()
@@ -23,3 +26,5 @@ class MiEstadoSerializer(serializers.Serializer):
     en_pausa_almuerzo = serializers.BooleanField()
     franja_almuerzo = FranjaHorariaSerializer(allow_null=True)
     resumen_hoy = ResumenHoySerializer()
+    rastreo = RastreoSerializer()
+    ultima_verificacion = UltimaVerificacionSerializer(allow_null=True)

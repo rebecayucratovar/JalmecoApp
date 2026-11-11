@@ -1,4 +1,4 @@
-from django.db import models
+from django.contrib.gis.db import models
 from django.db.models import Q
 from django.utils import timezone
 
@@ -25,6 +25,8 @@ class Verificacion(models.Model):
     solicitada_en = models.DateTimeField(default=timezone.now)
     respondida_en = models.DateTimeField(null=True, blank=True)
     resultado = models.CharField(max_length=15, choices=Resultado.choices, default=Resultado.PENDIENTE)
+    # Dónde estaba al confirmar (lo envía la app al responder)
+    punto = models.PointField(geography=True, srid=4326, null=True, blank=True)
 
     class Meta:
         db_table = 'verificacion'

@@ -1,4 +1,4 @@
-# Jalmeco Campo — Contexto del proyecto (para Claude Code)
+# Jalmeco GPS — Contexto del proyecto (para Claude Code)
 
 Este archivo le da a Claude Code el contexto del proyecto. Mantener actualizado.
 
@@ -41,7 +41,7 @@ puede salir en jornada. MVP: La Paz; Santa Cruz entra con multi-sucursal (Fase 2
 ## Estructura del monorepo
 
 ```
-jalmeco-campo/
+jalmeco-gps/
 ├── backend/     Django + DRF + GeoDjango (API + worker)   — corre en Docker
 ├── web-admin/   React + Vite + TS                          — nativo en dev
 └── mobile/      Flutter (Android)                          — nativo, SDK local
@@ -53,20 +53,27 @@ Flutter NO va en Docker. Backend + DB sí (incluye las librerías de mapas GDAL/
 
 - **administrador:** login del panel (email + password_hash).
 - **tecnico:** login de la app (usuario + pin_hash). Vinculado a Odoo por `odoo_employee_id`.
-  Campos de último estado denormalizados (estado_actual, ultima_lat/lng, ultima_bateria,
-  ultima_actualizacion) para el mapa en vivo. Incluye marca/modelo de celular y número.
+  El usuario es el de Odoo; si no tiene, su código JAL-XXXX (el login acepta ambos).
+  `pin_hash` NULL = "Sin PIN"; `pin_generado_en`. Campos de último estado denormalizados
+  (estado_actual, ultima_lat/lng, ultima_bateria, ultima_velocidad, ultima_actualizacion)
+  para el mapa en vivo.
 - **jornada:** de la entrada a la salida (de Odoo). Incluye ubicacion_inicio/fin.
 - **ubicacion:** cada punto GPS (geography Point). La tabla que más crece. Índices por
   (tecnico, registrado_en) y espacial en el punto.
 - **parada:** paradas calculadas (para la línea de tiempo).
-- **alerta:** sin_conexion, bateria_baja, verificacion_no_realizada.
+- **alerta:** sin_conexion, bateria_baja, verificacion_no_realizada, cambio_equipo,
+  seguimiento_detenido. MVP: aviso al admin por correo (SMS/WhatsApp de pago → Fase 2).
 - **franja_pausa:** ventanas sin rastreo (fila inicial: Almuerzo 12:00–13:00).
 - **verificacion:** solicitudes de huella (tecnico, jornada, solicitada_en, respondida_en,
-  resultado: exito / no_realizada).
+  resultado: exito / no_realizada, punto donde confirmó).
+- **sincronizacion_odoo:** historial (solo corridas con registros o con error). La "última
+  sincronización OK" es un solo dato en `configuracion.odoo_ultima_sync_ok`.
 - **zona (Fase 2, no ahora):** geocercas para "En sucursal" y "En punto de trabajo".
 
-Celular: `celular_modelo` (lo autocompleta la app con device_info_plus) y `celular_numero`
-(+591, se importa del Excel de la empresa).
+Celular: **asignado** = `celular_modelo` (lo carga el admin, ej. "Samsung A15") y
+`celular_numero` (+591, del Excel). **Detectado** = `equipo_id` (Android ID) + `equipo_modelo`
+(device_info_plus, ej. "samsung SM-A155F"), lo reporta la app. Primera vez se guarda sin
+alerta; si luego llega otro `equipo_id` → alerta `cambio_equipo`. Sin IMEI (Android 10+).
 
 ## Reglas de negocio clave
 
@@ -76,6 +83,11 @@ Celular: `celular_modelo` (lo autocompleta la app con device_info_plus) y `celul
   la tabla `zona`).
 - **Horario laboral:** 08:00–12:00 y 13:00–18:00 (en `configuracion`: horario_inicio/fin).
   Es informativo: la jornada real la marcan la entrada y salida de Odoo.
+- **Captura GPS:** un punto cada `gps_distancia_m` (25 m) recorridos, o cada `gps_intervalo_seg`
+  (120 s) si está quieto. La velocidad la da el GPS del celular (no se calcula). La app guarda
+  en SQLite y envía en lotes.
+- **Seguimiento detenido:** si cierra sesión, quita el permiso o apaga el GPS en jornada, la
+  app avisa (`mi/seguimiento-detenido`) → alerta al admin.
 - **Almuerzo / privacidad:** entre 12:00 y 13:00 (hora America/La_Paz) la app NO recolecta ni
   guarda puntos, y el backend rechaza cualquier punto en esa franja.
 - **Huella:** la app pide confirmar identidad con la huella del celular en momentos aleatorios,
@@ -89,14 +101,13 @@ Celular: `celular_modelo` (lo autocompleta la app con device_info_plus) y `celul
 
 ## Integración con Odoo
 
-- Leer `hr.attendance` para abrir/cerrar jornadas; `hr.employee` para importar personal y su
-  **cargo** (job position de Odoo). El worker sincroniza cada ~1–15 min.
+- Leer `hr.attendance` para abrir/cerrar jornadas (entrada/salida); `hr.employee` para
+  importar personal y su **cargo** (job position de Odoo). El worker lee la asistencia cada
+  **1–2 min** como máximo (`odoo_sync_min`).
 - **Espejo a Odoo (pedido de gerencia):** subir la última ubicación de cada persona a un campo
   del empleado cada ~8 min, para consultarla en Odoo. El detalle completo queda en el panel
   propio (con enlace). Solo resumen liviano, para no sobrecargar Odoo.
-- El celular (marca/modelo/número) NO viene de Odoo: marca/modelo los autocompleta la app
-  (`device_info_plus`); el número se importa de un Excel de la empresa. IMEI no es accesible
-  en Android moderno.
+- El celular NO viene de Odoo (ver "Celular" arriba).
 
 ## Convenciones
 
@@ -128,7 +139,8 @@ cd mobile && flutter run
 - Confirmar si en Odoo los empleados ya tienen el cargo cargado.
 - Teléfono del único trabajador con iPhone (recomendado: darle un Android).
 
-Resuelto: retención = 12 meses. Celular: número del Excel + modelo automático por la app.
+Resuelto: retención = 12 meses. Nombre: Jalmeco GPS. Login: usuario de Odoo o código JAL.
+Celular: asignado (admin + Excel) y detectado (app). Sin IMEI ni celular del administrador.
 
 ## Reparto del equipo (3 personas)
 

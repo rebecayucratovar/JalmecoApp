@@ -1,4 +1,4 @@
-# Contrato de la API — Jalmeco Campo
+# Contrato de la API — Jalmeco GPS
 
 Define los endpoints que conectan el **backend** (Django) con la **app móvil** y el
 **panel web**. Es el acuerdo para que los 3 trabajen en paralelo.
@@ -30,14 +30,17 @@ Login del técnico (app móvil).
 → { "usuario": "jmartinez", "pin": "292317" }
 ← { "access": "jwt…", "refresh": "jwt…", "tecnico": { …resumen técnico… } }
 ```
+- `usuario` acepta el **usuario de Odoo o el código JAL-XXXX** (sin distinguir mayúsculas).
+  Si la persona no tiene usuario en Odoo, su usuario es el código.
+- Un técnico "Sin PIN" (el admin aún no lo generó) no puede entrar → 401.
 
 ### POST /auth/refresh
 ```
 → { "refresh": "jwt…" }   ← { "access": "jwt…" }
 ```
 - Access dura 60 min y refresh 30 días (configurable). Credenciales o tokens inválidos → 401.
-- Límite de intentos: 10 por hora **por usuario/email** y 60 por minuto por IP → 429
-  `DEMASIADOS_INTENTOS`.
+- Límite de intentos: 10 por hora **por persona** (usuario y código cuentan juntos) y 60 por
+  minuto por IP → 429 `DEMASIADOS_INTENTOS`.
 
 ---
 
@@ -50,10 +53,13 @@ Login del técnico (app móvil).
   "cargo": "Supervisor de campo", "foto_url": "…",
   "estado_actual": "en_trayecto",      // fuera_jornada | en_trayecto | en_parada | sin_conexion
   "ultima_lat": -16.5412, "ultima_lng": -68.0790, "ultima_bateria": 91,
+  "ultima_velocidad": 28.4,             // km/h, del último punto
   "ultima_actualizacion": "2026-11-07T11:30:05-04:00",
   "celular_modelo": "Motorola G54", "celular_numero": "+591 720 11873"
 }
 ```
+- `celular_modelo` / `celular_numero`: celular **asignado** por la empresa (los carga el admin).
+  El equipo **detectado** por la app (`equipo_modelo`) se ve en el detalle del técnico.
 
 ---
 
@@ -67,7 +73,10 @@ Estado de la jornada actual (para la pantalla Inicio).
     "jornada": { "inicio": "2026-11-07T08:02:00-04:00", "horario": "08:00–18:00" },
     "en_pausa_almuerzo": false,
     "franja_almuerzo": { "inicio": "12:00", "fin": "13:00" },
-    "resumen_hoy": { "tiempo_jornada_min": 263, "distancia_km": 37.4 }
+    "resumen_hoy": { "tiempo_jornada_min": 263, "distancia_km": 37.4 },
+    "rastreo": { "distancia_m": 25, "intervalo_seg": 120 },
+    "ultima_verificacion": { "solicitada_en": "…11:30…", "respondida_en": "…11:31…",
+                             "resultado": "exito" }        // o null; pendiente | exito | no_realizada
   }
 ```
 - `jornada` es `null` si no hay jornada activa. `horario` sale de la configuración (horario laboral).
@@ -76,6 +85,9 @@ Estado de la jornada actual (para la pantalla Inicio).
 - `resumen_hoy.tiempo_jornada_min`: minutos de las jornadas de hoy (la activa cuenta hasta ahora).
 - `resumen_hoy.distancia_km`: kilómetros **recorridos** hoy (suma de tramos entre puntos
   consecutivos; ignora puntos con precisión peor que 50 m). No es la distancia en línea recta.
+- `rastreo`: cómo debe capturar la app (configurable en el panel). Un punto cada vez que se
+  mueve `distancia_m` metros **o** cada `intervalo_seg` segundos si está quieto (para que el
+  panel sepa que sigue conectado). La app lo relee en cada sondeo.
 
 ### POST /mi/ubicaciones
 Enviar puntos GPS (en lote; soporta los acumulados offline).
@@ -93,25 +105,53 @@ Enviar puntos GPS (en lote; soporta los acumulados offline).
 - Solo los puntos de la jornada **activa** actualizan la última posición/estado (mapa en vivo).
 
 ### PUT /mi/dispositivo
-Reportar marca/modelo del celular (autocompletado por la app).
+Equipo detectado por la app (`device_info_plus` + Android ID). Llamar al iniciar sesión y al
+abrir la app.
 ```
-→ { "celular_modelo": "Samsung Galaxy A15" }   ← { "ok": true }
+→ { "equipo_id": "9774d56d682e549c", "equipo_modelo": "samsung SM-A155F" }
+← { "ok": true, "cambio_equipo": false }
 ```
+- Primera vez (sin equipo registrado): se guarda, sin alerta.
+- Si ya había otro `equipo_id` → se registra el nuevo y se crea la alerta **`cambio_equipo`**
+  (crítica): cambio de celular o intento de usar otro equipo para evadir el GPS.
+- El IMEI no se usa (Android 10+ no lo permite).
+
+### POST /mi/seguimiento-detenido
+La app avisa que va a dejar de rastrear. Solo crea alerta si hay jornada activa.
+```
+→ { "motivo": "cerro_sesion" }   // cerro_sesion | permiso_revocado | gps_apagado
+← { "ok": true, "alerta_creada": true }
+```
+- Genera la alerta **`seguimiento_detenido`** (crítica). Al cerrar sesión, llamarlo **antes** de
+  borrar el token.
 
 ### GET /mi/verificacion-pendiente
-¿Hay una verificación de huella pendiente? (la app también la recibe por notificación).
+¿Hay una verificación de huella vigente? (la app también la recibe por notificación).
 ```
-← { "pendiente": true, "verificacion_id": 88, "limite_min": 3 }   // o { "pendiente": false }
+← { "pendiente": true, "verificacion_id": 88, "solicitada_en": "…11:30:00…",
+    "vence_en": "…11:33:00…", "limite_min": 3 }          // o { "pendiente": false }
 ```
 
 ### POST /mi/verificaciones/{id}/responder
-Resultado tras pasar la huella en el celular.
+Resultado tras pasar la huella en el celular (`local_auth` en modo **solo biometría**).
 ```
-→ { "resultado": "exito" }   ← { "ok": true }
+→ { "resultado": "exito", "lat": -16.5412, "lng": -68.0790 }   ← { "ok": true }
 ```
+- `lat`/`lng` opcionales: dónde estaba al confirmar (se ve en el panel).
+- Solo se envía `exito`. Si no responde a tiempo, el worker la marca `no_realizada` y alerta.
+- 409 `YA_RESPONDIDA` si ya fue respondida · 409 `VERIFICACION_VENCIDA` si pasó el límite ·
+  404 si no es suya.
 
 ### GET /mi/perfil
-Datos del técnico para la pantalla Perfil (código, cargo, celular, políticas).
+Datos del técnico y políticas (pantalla Perfil).
+```
+← { "tecnico": { "id": 1, "codigo": "JAL-1047", "usuario": "jmartinez", "nombre": "…",
+                 "cargo": "…", "foto_url": null, "celular_modelo": "Samsung A15",
+                 "celular_numero": "+591 712 34567", "equipo_modelo": "samsung SM-A155F" },
+    "politicas": { "horario": "08:00–18:00", "franja_almuerzo": { "inicio": "12:00", "fin": "13:00" },
+                   "retencion_meses": 12, "verificaciones_por_dia": 2,
+                   "rastreo": { "distancia_m": 25, "intervalo_seg": 120 } } }
+```
 
 ---
 
@@ -140,17 +180,18 @@ Importa empleados desde Odoo (nombre, código, cargo).
 ```
 
 ### POST /tecnicos/{id}/pin
-Genera o reinicia el PIN (se muestra una sola vez).
+Genera o reinicia el PIN (se muestra una sola vez). Guarda `pin_generado_en`.
 ```
-← { "pin": "292317" }
+← { "pin": "292317", "generado_en": "…" }
 ```
+- En la lista/detalle: `tiene_pin` (false = "Sin PIN") y `pin_generado_en`.
 
 ### GET /tecnicos/{id}/recorrido?fecha=YYYY-MM-DD
 El recorrido del día (puntos + paradas + resumen) — para el mapa y la línea de tiempo.
 ```
 ← {
     "jornada": { "inicio": "…08:02…", "fin": "…16:42…", "estado": "cerrada" },
-    "resumen": { "en_campo_min": 482, "en_sucursal_min": 38, "paradas": 2, "distancia_km": 14.8 },
+    "resumen": { "en_campo_min": 482, "paradas": 2, "distancia_km": 14.8 },   // en_sucursal: Fase 2
     "puntos":  [ { "lat": …, "lng": …, "hora": "…" }, … ],
     "paradas": [ { "lat": …, "lng": …, "inicio": "…", "fin": "…", "duracion_min": 14,
                    "direccion": "Calle Rosendo Gutiérrez" }, … ],
@@ -165,7 +206,8 @@ Lista de jornadas pasadas con resumen (fecha, horas en campo, distancia…).
 Verificaciones de huella del día.
 ```
 ← { "realizadas": 1, "total": 2, "items": [
-     { "solicitada_en": "…11:30…", "respondida_en": "…11:31…", "resultado": "exito" }, … ] }
+     { "solicitada_en": "…11:30…", "respondida_en": "…11:31…", "resultado": "exito",
+       "lat": -16.54, "lng": -68.07 }, … ] }
 ```
 
 ### GET /alertas
@@ -178,14 +220,27 @@ GET /alertas?estado=nueva&tipo=sin_conexion&desde=…&hasta=…
        "nivel": "advertencia", "creada_en": "…16:30…", "estado": "nueva" }, … ] }
 ```
 
+Tipos: `sin_conexion`, `bateria_baja`, `verificacion_no_realizada`, `cambio_equipo`,
+`seguimiento_detenido`. En el MVP el aviso al admin es por **correo** (SMS/WhatsApp: Fase 2).
+
 ### POST /alertas/{id}/atender  ·  POST /alertas/atender-todas
 Marca una (o todas) como atendidas.
 
 ### GET /config  ·  PUT /config
-Configuración: almuerzo, retención (meses), verificación (por día, límite min), Odoo.
+Configuración: horario laboral, almuerzo, retención (meses), verificación (por día, límite min),
+captura GPS (`gps_distancia_m`, `gps_intervalo_seg`) y Odoo (`odoo_sync_min`: 1 o 2 min).
 
 ### GET /odoo/estado  ·  POST /odoo/sincronizar
 Estado de la integración y disparar una sincronización manual.
+```
+← { "ultima_sync_ok": "…16:31…",          // "Última sincronización: hace 1 min"
+    "historial": [
+      { "fecha": "…16:30…", "tipo": "asistencia", "resultado": "ok", "registros": 2 },
+      { "fecha": "…15:45…", "tipo": "asistencia", "resultado": "error",
+        "mensaje": "Tiempo de espera agotado, reintentado" } ] }
+```
+- El historial solo guarda corridas **con registros** o **con error**; las vacías solo pisan
+  `ultima_sync_ok`.
 
 ### GET /mi-cuenta  ·  PUT /mi-cuenta  ·  POST /mi-cuenta/password
 Datos del administrador y cambio de contraseña.

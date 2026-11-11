@@ -60,6 +60,7 @@ def _actualizar_ultimo_estado(tecnico, ultimo):
         ultima_lat=ultimo.punto.y,
         ultima_lng=ultimo.punto.x,
         ultima_bateria=ultimo.bateria,
+        ultima_velocidad=ultimo.velocidad,
         ultima_actualizacion=ultimo.registrado_en,
         estado_actual=_estado_por_velocidad(ultimo.velocidad),
     )

@@ -61,10 +61,17 @@ class Tecnico(models.Model):
     nombre = models.CharField(max_length=160)
     cargo = models.CharField(max_length=120, null=True, blank=True)  # de Odoo
     foto_url = models.TextField(null=True, blank=True)
-    celular_modelo = models.CharField(max_length=80, null=True, blank=True)  # device_info_plus
-    celular_numero = models.CharField(max_length=20, null=True, blank=True)  # +591, del Excel
+    # Celular ASIGNADO por la empresa (lo carga el admin; el número viene del Excel)
+    celular_modelo = models.CharField(max_length=80, null=True, blank=True)  # ej. "Samsung A15"
+    celular_numero = models.CharField(max_length=20, null=True, blank=True)  # +591
+    # Equipo DETECTADO por la app (device_info_plus + Android ID). Si cambia → alerta cambio_equipo
+    equipo_id = models.CharField(max_length=64, null=True, blank=True)
+    equipo_modelo = models.CharField(max_length=80, null=True, blank=True)  # ej. "samsung SM-A155F"
+    equipo_registrado_en = models.DateTimeField(null=True, blank=True)
+    # Login: usuario de Odoo; si la persona no tiene, el usuario es su código JAL-XXXX
     usuario = models.CharField(max_length=40, unique=True)
-    pin_hash = models.CharField(max_length=255)  # PIN de 6 dígitos cifrado
+    pin_hash = models.CharField(max_length=255, null=True, blank=True)  # NULL = "Sin PIN"
+    pin_generado_en = models.DateTimeField(null=True, blank=True)
     activo = models.BooleanField(default=True)
 
     # Último estado (denormalizado para el mapa en vivo)
@@ -74,6 +81,7 @@ class Tecnico(models.Model):
     ultima_bateria = models.SmallIntegerField(
         null=True, blank=True, validators=[MinValueValidator(0), MaxValueValidator(100)],
     )
+    ultima_velocidad = models.FloatField(null=True, blank=True)  # km/h
     ultima_actualizacion = models.DateTimeField(null=True, blank=True)
     creado_en = models.DateTimeField(default=timezone.now)
 
@@ -101,6 +109,13 @@ class Tecnico(models.Model):
         if not (len(raw_pin) == 6 and raw_pin.isdigit()):
             raise ValueError('El PIN debe tener exactamente 6 dígitos.')
         self.pin_hash = make_password(raw_pin)
+        self.pin_generado_en = timezone.now()
 
     def check_pin(self, raw_pin):
+        if not self.pin_hash:
+            return False  # "Sin PIN": no puede entrar hasta que el admin genere uno
         return check_password(str(raw_pin), self.pin_hash)
+
+    @property
+    def tiene_pin(self):
+        return bool(self.pin_hash)

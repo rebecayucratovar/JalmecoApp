@@ -1,6 +1,8 @@
 import datetime
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Q
 
 
 class FranjaPausa(models.Model):
@@ -28,17 +30,32 @@ class Configuracion(models.Model):
     retencion_meses = models.IntegerField(default=12)  # borrar datos más viejos
     verificaciones_por_dia = models.IntegerField(default=2)  # huellas por jornada
     verificacion_limite_min = models.IntegerField(default=3)  # minutos para responder
-    odoo_sync_min = models.IntegerField(default=2)  # cada cuánto leer asistencia
+    # Cada cuánto leer la asistencia (entrada/salida) de Odoo: 1 o 2 min como máximo
+    odoo_sync_min = models.IntegerField(default=2, validators=[MinValueValidator(1), MaxValueValidator(2)])
     espejo_odoo_min = models.IntegerField(default=8)  # subir última ubicación a Odoo
     # Horario laboral esperado (el almuerzo está en franja_pausa). Solo informativo:
     # la jornada real la marcan la entrada/salida de Odoo.
     horario_inicio = models.TimeField(default=datetime.time(8, 0))
     horario_fin = models.TimeField(default=datetime.time(18, 0))
+    # Captura GPS de la app: un punto cada vez que se mueve N metros, o cada N segundos si
+    # está quieto (así el panel sabe que sigue conectado aunque no se mueva).
+    gps_distancia_m = models.IntegerField(default=25, validators=[MinValueValidator(5), MaxValueValidator(500)])
+    gps_intervalo_seg = models.IntegerField(default=120, validators=[MinValueValidator(30), MaxValueValidator(900)])
+    # Estado (no es un parámetro): última sincronización correcta con Odoo. Se va pisando.
+    odoo_ultima_sync_ok = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'configuracion'
         verbose_name = 'configuración'
         verbose_name_plural = 'configuración'
+        constraints = [
+            models.CheckConstraint(condition=Q(odoo_sync_min__gte=1, odoo_sync_min__lte=2),
+                                   name='configuracion_odoo_sync_min_rango'),
+            models.CheckConstraint(condition=Q(gps_distancia_m__gte=5, gps_distancia_m__lte=500),
+                                   name='configuracion_gps_distancia_rango'),
+            models.CheckConstraint(condition=Q(gps_intervalo_seg__gte=30, gps_intervalo_seg__lte=900),
+                                   name='configuracion_gps_intervalo_rango'),
+        ]
 
     def __str__(self):
         return 'Configuración del sistema'

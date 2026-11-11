@@ -16,7 +16,17 @@ class LoginPorUsuarioThrottle(SimpleRateThrottle):
         ident = datos.get('usuario') or datos.get('email')
         if not isinstance(ident, str) or not ident.strip():
             return None  # sin identificador no hay a quién limitar (la validación lo rechazará)
-        return self.cache_format % {'scope': self.scope, 'ident': ident.strip().lower()}
+        ident = ident.strip().lower()
+        if datos.get('usuario'):
+            # El técnico entra con usuario O código: contar por persona, para que alternar
+            # entre ambos no duplique los intentos permitidos.
+            from django.db.models import Q
+
+            from .models import Tecnico
+            pk = Tecnico.objects.filter(Q(usuario__iexact=ident) | Q(codigo__iexact=ident))                 .order_by('id').values_list('pk', flat=True).first()
+            if pk is not None:
+                ident = f'tecnico-{pk}'
+        return self.cache_format % {'scope': self.scope, 'ident': ident}
 
 
 class LoginPorIPThrottle(SimpleRateThrottle):
