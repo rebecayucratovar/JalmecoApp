@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'pantallas/inicio_pantalla.dart';
 import 'pantallas/login_pantalla.dart';
 import 'pantallas/permisos_pantalla.dart';
+import 'pantallas/principal_pantalla.dart';
 import 'servicios/api.dart';
 import 'servicios/dispositivo.dart';
 import 'servicios/permisos.dart';
@@ -91,7 +91,7 @@ class _RaizState extends State<Raiz> with WidgetsBindingObserver {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (permisos.mostrarPantalla) return PermisosPantalla(permisos: permisos);
-        return InicioPantalla(api: api);
+        return PrincipalPantalla(api: api);
       },
     );
   }
