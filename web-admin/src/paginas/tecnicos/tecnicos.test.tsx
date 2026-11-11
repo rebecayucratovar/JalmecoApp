@@ -58,6 +58,8 @@ describe('datos de técnicos', () => {
     const e = new ApiError('Datos inválidos.', 400, 'DATOS_INVALIDOS', { codigo: ['Formato JAL-XXXX.'] })
     expect(erroresPorCampo(e)).toEqual({ codigo: 'Formato JAL-XXXX.' })
     expect(erroresPorCampo(new Error('x'))).toEqual({})
+    const anidado = new ApiError('Datos inválidos.', 400, 'DATOS_INVALIDOS', { almuerzo: { non_field_errors: ['Termina antes de empezar.'] } })
+    expect(erroresPorCampo(anidado)).toEqual({ almuerzo: 'Termina antes de empezar.' })
   })
 })
 

@@ -176,7 +176,22 @@ export function erroresPorCampo(error: unknown): Record<string, string> {
   if (!(error instanceof ApiError) || typeof error.detalle !== 'object' || error.detalle == null) return {}
   const salida: Record<string, string> = {}
   for (const [campo, mensajes] of Object.entries(error.detalle as Record<string, unknown>)) {
-    salida[campo] = Array.isArray(mensajes) ? String(mensajes[0]) : String(mensajes)
+    const mensaje = primerMensaje(mensajes)
+    if (mensaje) salida[campo] = mensaje
   }
   return salida
+}
+
+/** El primer texto de un error que puede venir anidado (p. ej. { almuerzo: { non_field_errors: ["…"] } }). */
+function primerMensaje(valor: unknown): string | null {
+  if (typeof valor === 'string') return valor
+  if (Array.isArray(valor)) {
+    for (const v of valor) {
+      const m = primerMensaje(v)
+      if (m) return m
+    }
+    return null
+  }
+  if (valor && typeof valor === 'object') return primerMensaje(Object.values(valor))
+  return valor == null ? null : String(valor)
 }
