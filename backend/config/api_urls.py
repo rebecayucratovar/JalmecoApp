@@ -2,7 +2,7 @@
 from django.urls import path
 
 from jornadas.views import MiEstadoView
-from ubicaciones.views import MapaEnVivoView, MisUbicacionesView
+from ubicaciones.views import MapaEnVivoView, MisUbicacionesView, RecorridoView
 from usuarios.views import (
     LoginAdminView, LoginTecnicoView, MiDispositivoView, MiPerfilView, MiSeguimientoDetenidoView, RefreshView,
 )
@@ -30,4 +30,5 @@ urlpatterns = [
     path('tecnicos', TecnicosView.as_view(), name='tecnicos'),
     path('tecnicos/<int:pk>', TecnicoView.as_view(), name='tecnico'),
     path('tecnicos/<int:pk>/pin', TecnicoPinView.as_view(), name='tecnico-pin'),
+    path('tecnicos/<int:pk>/recorrido', RecorridoView.as_view(), name='tecnico-recorrido'),
 ]

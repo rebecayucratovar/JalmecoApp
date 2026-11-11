@@ -63,7 +63,8 @@ Flutter NO va en Docker. Backend + DB sí (incluye las librerías de mapas GDAL/
 - **jornada:** de la entrada a la salida (de Odoo). Incluye ubicacion_inicio/fin.
 - **ubicacion:** cada punto GPS (geography Point). La tabla que más crece. Índices por
   (tecnico, registrado_en) y espacial en el punto.
-- **parada:** paradas calculadas (para la línea de tiempo).
+- **parada:** reservada (Fase 2: direcciones/zonas). Hoy las paradas se calculan al consultar el
+  recorrido (`ubicaciones/recorrido.py`: ≤ 100 m durante ≥ 5 min; filtra lecturas falsas del GPS).
 - **alerta:** sin_conexion, bateria_baja, verificacion_no_realizada, cambio_equipo,
   seguimiento_detenido. MVP: aviso al admin por correo (SMS/WhatsApp de pago → Fase 2).
 - **franja_pausa:** ventanas sin rastreo (fila inicial: Almuerzo 12:00–13:00).

@@ -1,9 +1,11 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.contrib.gis.geos import Point
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -14,6 +16,7 @@ from usuarios.models import Tecnico
 from usuarios.permisos import EsAdmin, EsTecnico
 
 from .models import Ubicacion
+from .recorrido import recorrido_del_dia
 from .serializers import (
     LoteUbicacionesSerializer, MapaEnVivoSerializer, PuntoSerializer, RespuestaUbicacionesSerializer,
 )
@@ -132,3 +135,21 @@ class MapaEnVivoView(APIView):
         tecnicos = con_jornada(Tecnico.objects.filter(activo=True)).order_by('nombre')
         datos = MapaEnVivoSerializer({'actualizado_en': timezone.now(), 'tecnicos': tecnicos})
         return Response(datos.data)
+
+
+class RecorridoView(APIView):
+    """GET /api/v1/tecnicos/{id}/recorrido?fecha=YYYY-MM-DD (por defecto, hoy en La Paz)."""
+
+    permission_classes = [EsAdmin]
+
+    def get(self, request, pk):
+        tecnico = get_object_or_404(Tecnico, pk=pk)
+        texto = request.query_params.get('fecha')
+        if texto:
+            try:
+                fecha = date.fromisoformat(texto)
+            except ValueError:
+                raise ValidationError({'fecha': 'Usa el formato AAAA-MM-DD.'})
+        else:
+            fecha = timezone.localdate()
+        return Response(recorrido_del_dia(tecnico, fecha))

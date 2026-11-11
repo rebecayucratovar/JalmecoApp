@@ -5,7 +5,6 @@ import {
   MapPinIcon,
   PencilIcon,
   PhoneIcon,
-  RouteIcon,
   SmartphoneIcon,
   TriangleAlertIcon,
 } from 'lucide-react'
@@ -18,6 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { fechaCorta, fechaHora, hora } from '@/lib/formato'
 import { useAhora } from '@/lib/useAhora'
 import { NoEncontrada } from '@/paginas/Proximamente'
+
+import { RecorridoPestana } from './recorrido/RecorridoPestana'
 
 import { formatoCelular, useGuardarTecnico, useTecnico, type TecnicoAdmin } from './datos'
 import { DialogoPin } from './DialogoPin'
@@ -105,11 +106,15 @@ function Ficha({ tecnico: t }: { tecnico: TecnicoAdmin }) {
         </div>
       )}
 
-      <Tabs defaultValue="datos">
+      <Tabs defaultValue="recorrido">
         <TabsList>
-          <TabsTrigger value="datos">Datos y acceso</TabsTrigger>
           <TabsTrigger value="recorrido">Recorrido del día</TabsTrigger>
+          <TabsTrigger value="datos">Datos y acceso</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="recorrido" className="mt-4">
+          <RecorridoPestana tecnicoId={t.id} />
+        </TabsContent>
 
         <TabsContent value="datos" className="mt-4 grid gap-4 lg:grid-cols-2">
           <Tarjeta titulo="Acceso a la app">
@@ -175,15 +180,6 @@ function Ficha({ tecnico: t }: { tecnico: TecnicoAdmin }) {
           </Tarjeta>
         </TabsContent>
 
-        <TabsContent value="recorrido" className="mt-4">
-          <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-10 text-center">
-            <RouteIcon className="size-8 text-muted-foreground" />
-            <p className="font-medium">Recorrido del día · en construcción</p>
-            <p className="max-w-md text-sm text-muted-foreground">
-              Mapa con el trayecto, paradas, línea de tiempo y reproducción. Es el siguiente paso.
-            </p>
-          </div>
-        </TabsContent>
       </Tabs>
 
       <FormularioTecnico tecnico={t} abierto={editando} alCambiar={setEditando} />

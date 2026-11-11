@@ -212,17 +212,25 @@ Genera o reinicia el PIN (se muestra una sola vez). Guarda `pin_generado_en`.
   PIN anterior dejan de valer: la app recibe 401 `SESION_REVOCADA` y vuelve al login.
 
 ### GET /tecnicos/{id}/recorrido?fecha=YYYY-MM-DD
-El recorrido del día (puntos + paradas + resumen) — para el mapa y la línea de tiempo.
+El recorrido de un día (por defecto hoy, hora de La Paz) — mapa, línea de tiempo y reproducción.
 ```
 ← {
-    "jornada": { "inicio": "…08:02…", "fin": "…16:42…", "estado": "cerrada" },
-    "resumen": { "en_campo_min": 482, "paradas": 2, "distancia_km": 14.8 },   // en_sucursal: Fase 2
-    "puntos":  [ { "lat": …, "lng": …, "hora": "…" }, … ],
-    "paradas": [ { "lat": …, "lng": …, "inicio": "…", "fin": "…", "duracion_min": 14,
-                   "direccion": "Calle Rosendo Gutiérrez" }, … ],
+    "fecha": "2026-11-11",
+    "jornadas": [ { "id": 6, "inicio": "…", "fin": "…" | null, "estado": "cerrada" }, … ],
+    "resumen": { "en_jornada_min": 482, "en_paradas_min": 95, "paradas": 2, "distancia_km": 14.8,
+                 "puntos": 412 },
+    "puntos":  [ { "lat": …, "lng": …, "hora": "…", "velocidad": 28.4, "bateria": 81 }, … ],
+    "paradas": [ { "lat": …, "lng": …, "inicio": "…", "fin": "…", "duracion_min": 14 }, … ],
     "pausas":  [ { "nombre": "Almuerzo", "inicio": "…12:00…", "fin": "…13:00…" } ]
   }
 ```
+- `jornadas` es una lista: puede marcar entrada y salida más de una vez en el día.
+- Las paradas se calculan al consultar: puntos seguidos a ≤ 100 m durante ≥ 5 min.
+- Se descartan lecturas falsas del GPS (precisión peor que 100 m, "picos" que se alejan y
+  vuelven, saltos de más de 180 km/h, duplicados). Un hueco de más de 20 min sin puntos corta el
+  trayecto: no se dibuja ni se suma distancia a través de él (p. ej. el almuerzo).
+- La distancia no cuenta el "temblor" del GPS dentro de las paradas.
+- `en_jornada_min` descuenta las pausas. Dirección de las paradas y "en sucursal": Fase 2.
 
 ### GET /tecnicos/{id}/historial
 Lista de jornadas pasadas con resumen (fecha, horas en campo, distancia…).

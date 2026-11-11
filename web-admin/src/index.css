@@ -188,3 +188,45 @@
 .dark .leaflet-control-attribution a {
   color: var(--primary);
 }
+
+/* ---- Recorrido del día ---- */
+.marcador-parada {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  border-radius: 9999px;
+  background: #d97706;
+  color: #fff;
+  font: 700 12px/1 var(--font-sans);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+  --color: #d97706;
+}
+.marcador-extremo {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  border-radius: 6px;
+  color: #fff;
+  font: 700 11px/1 var(--font-sans);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+}
+.marcador-entrada {
+  background: #15803d;
+}
+.marcador-salida {
+  background: #475569;
+}
+.marcador-posicion {
+  width: 100%;
+  height: 100%;
+  border: 3px solid #fff;
+  border-radius: 9999px;
+  background: #1c1c62;
+  box-shadow: 0 0 0 6px rgb(28 28 98 / 0.25), 0 1px 4px rgb(0 0 0 / 0.4);
+}
