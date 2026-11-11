@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../modelos/estado_jornada.dart';
 import '../modelos/perfil.dart';
+import '../rastreo/motor.dart';
 import 'api.dart';
 
 /// Estado de la jornada y perfil del técnico para las pantallas.
@@ -11,16 +12,19 @@ import 'api.dart';
 /// Consulta GET /mi/estado cada 30 s mientras la app está al frente (la jornada la abre o
 /// cierra Odoo, así que la app debe enterarse sola). Sin conexión conserva lo último recibido.
 class Datos extends ChangeNotifier {
-  Datos(this.api, {this.intervalo = const Duration(seconds: 30)});
+  Datos(this.api, {this.intervalo = const Duration(seconds: 30), this.leerBateria});
 
   final Api api;
   final Duration intervalo;
+  final Future<int?> Function()? leerBateria;
 
   EstadoJornada? estado;
   Perfil? perfil;
   bool enLinea = true;
   DateTime? actualizadoEn; // última respuesta correcta del servidor
   String? error; // mensaje si la última consulta falló
+  EstadoRastreo? rastreo; // lo informa el servicio de rastreo (puntos por enviar, GPS)
+  int? bateria;
 
   Timer? _timer;
   bool _consultando = false;
@@ -46,6 +50,7 @@ class Datos extends ChangeNotifier {
     try {
       final j = await api.get('mi/estado') as Map<String, dynamic>;
       estado = EstadoJornada.fromJson(j);
+      bateria = await _bateria();
       enLinea = true;
       actualizadoEn = DateTime.now();
       error = null;
@@ -55,6 +60,22 @@ class Datos extends ChangeNotifier {
     } finally {
       _consultando = false;
     }
+    _avisar();
+  }
+
+  Future<int?> _bateria() async {
+    try {
+      return await leerBateria?.call();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Datos que envía el servicio de rastreo (ver EstadoRastreo.aMapa).
+  void recibirDelServicio(Object datos) {
+    final r = EstadoRastreo.deMapa(datos);
+    if (r == null) return;
+    rastreo = r;
     _avisar();
   }
 

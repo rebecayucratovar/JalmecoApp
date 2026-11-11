@@ -42,6 +42,20 @@ Si el celular no llega al backend: permitir el puerto 8000 en el Firewall de Win
 Datos de prueba: crear técnico con `python manage.py crear_tecnico` (ver backend). El login
 acepta el usuario o el código JAL-XXXX.
 
+## Rastreo (lib/rastreo/)
+
+- `motor.dart`: la lógica (modo fuera / activo / almuerzo, captura, envío de la cola). Sin
+  Android, se prueba en `test/motor_test.dart`.
+- `servicio.dart`: servicio en primer plano (flutter_foreground_task) + GPS real (geolocator).
+- `cola_puntos.dart`: cola SQLite; sin señal los puntos esperan aquí.
+
+Probar una jornada: `docker compose exec backend python manage.py abrir_jornada 1` (y
+`cerrar_jornada 1`). Ver los puntos que llegaron:
+
+```
+docker compose exec db psql -U jalmeco -d jalmeco -c "SELECT id, ST_Y(punto::geometry) lat, ST_X(punto::geometry) lng, velocidad, bateria, registrado_en FROM ubicacion ORDER BY id DESC LIMIT 10;"
+```
+
 ## Pruebas
 
 ```

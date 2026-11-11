@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../modelos/estado_jornada.dart';
+import '../rastreo/servicio.dart';
 import '../servicios/datos.dart';
 import '../tema.dart';
 import '../utils/formato.dart';
 
-/// Estado del seguimiento. [PARCIAL] Batería, GPS del celular y "Puntos por enviar" se agregan
-/// junto con el servicio de rastreo.
+/// Estado del seguimiento: batería, GPS, conexión, sincronización, verificación y la cola de
+/// puntos por enviar (estos últimos los informa el servicio de rastreo).
 class EstadoPantalla extends StatelessWidget {
   const EstadoPantalla({super.key, required this.datos});
 
@@ -18,6 +19,8 @@ class EstadoPantalla extends StatelessWidget {
       listenable: datos,
       builder: (context, _) {
         final e = datos.estado;
+        final r = datos.rastreo;
+        const separador = Divider(height: 1, indent: 16, endIndent: 16, color: Colores.borde);
         return RefreshIndicator(
           onRefresh: datos.actualizar,
           child: ListView(
@@ -33,6 +36,21 @@ class EstadoPantalla extends StatelessWidget {
               Container(
                 decoration: BoxDecoration(color: Colores.superficie, borderRadius: BorderRadius.circular(20)),
                 child: Column(children: [
+                  if (datos.bateria != null) ...[
+                    _FilaBateria(nivel: datos.bateria!),
+                    separador,
+                  ],
+                  _Fila(
+                    icono: Icons.my_location,
+                    titulo: 'Ubicación del celular',
+                    valor: r == null
+                        ? const Text('—')
+                        : Text(r.gpsActivado ? 'Activada' : 'Desactivada',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: r.gpsActivado ? Colores.exito : Colores.error)),
+                  ),
+                  separador,
                   _Fila(
                     icono: datos.enLinea ? Icons.wifi : Icons.wifi_off,
                     titulo: 'Conexión',
@@ -41,7 +59,7 @@ class EstadoPantalla extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                             color: datos.enLinea ? Colores.exito : Colores.error)),
                   ),
-                  const Divider(height: 1, indent: 16, endIndent: 16, color: Colores.borde),
+                  separador,
                   _Fila(
                     icono: Icons.sync,
                     titulo: 'Última sincronización',
@@ -54,17 +72,22 @@ class EstadoPantalla extends StatelessWidget {
                                 style: const TextStyle(fontSize: 13, color: Colores.textoSuave)),
                           ]),
                   ),
-                  const Divider(height: 1, indent: 16, endIndent: 16, color: Colores.borde),
+                  separador,
                   _Fila(
                     icono: Icons.fingerprint,
                     titulo: 'Última verificación de identidad',
                     valor: _verificacion(e?.ultimaVerificacion),
                   ),
+                  separador,
+                  _FilaPendientes(pendientes: r?.pendientes),
                 ]),
               ),
               const SizedBox(height: 16),
               OutlinedButton.icon(
-                onPressed: datos.actualizar,
+                onPressed: () {
+                  datos.actualizar();
+                  ServicioRastreo.enviarAhora();
+                },
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(52),
                   backgroundColor: Colores.superficie,
@@ -163,6 +186,76 @@ class _Fila extends StatelessWidget {
         Expanded(child: Text(titulo, style: const TextStyle(fontSize: 15))),
         const SizedBox(width: 12),
         Flexible(child: Align(alignment: Alignment.centerRight, child: valor)),
+      ]),
+    );
+  }
+}
+
+class _FilaBateria extends StatelessWidget {
+  const _FilaBateria({required this.nivel});
+
+  final int nivel;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = nivel <= 15 ? Colores.error : (nivel <= 30 ? Colores.aviso : Colores.exito);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.battery_std, color: Colores.textoSuave),
+          const SizedBox(width: 12),
+          const Expanded(child: Text('Batería del celular', style: TextStyle(fontSize: 15))),
+          Text('$nivel %', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+        ]),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: nivel / 100,
+            minHeight: 8,
+            color: color,
+            backgroundColor: Colores.borde,
+          ),
+        ),
+        if (nivel <= 20) ...[
+          const SizedBox(height: 8),
+          const Text('Batería baja: carga el celular para no interrumpir el seguimiento.',
+              style: TextStyle(fontSize: 13, color: Colores.textoSuave)),
+        ],
+      ]),
+    );
+  }
+}
+
+class _FilaPendientes extends StatelessWidget {
+  const _FilaPendientes({this.pendientes});
+
+  final int? pendientes;
+
+  @override
+  Widget build(BuildContext context) {
+    final n = pendientes;
+    final nota = switch (n) {
+      null => 'Esperando al servicio de seguimiento…',
+      0 => 'Todo está enviado al servidor.',
+      _ => 'Se guardaron en el celular y se enviarán al recuperar la señal.',
+    };
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.cloud_upload_outlined, color: Colores.textoSuave),
+          const SizedBox(width: 12),
+          const Expanded(child: Text('Puntos por enviar', style: TextStyle(fontSize: 15))),
+          Text(n?.toString() ?? '—',
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: (n ?? 0) > 0 ? Colores.aviso : Colores.texto)),
+        ]),
+        const SizedBox(height: 6),
+        Text(nota, style: const TextStyle(fontSize: 13, color: Colores.textoSuave)),
       ]),
     );
   }

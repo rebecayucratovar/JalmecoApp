@@ -45,7 +45,7 @@ Future<void> _abrir(WidgetTester t, Datos datos) async {
   t.view.physicalSize = const Size(1080, 2400);
   t.view.devicePixelRatio = 2.6;
   addTearDown(t.view.reset);
-  await t.pumpWidget(MaterialApp(home: PrincipalPantalla(api: datos.api, datos: datos)));
+  await t.pumpWidget(MaterialApp(home: PrincipalPantalla(api: datos.api, datos: datos, conServicio: false)));
   await t.pumpAndSettle();
 }
 

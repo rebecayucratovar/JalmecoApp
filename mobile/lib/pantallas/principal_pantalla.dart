@@ -1,5 +1,8 @@
+import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
+import '../rastreo/servicio.dart';
 import '../servicios/api.dart';
 import '../servicios/datos.dart';
 import '../tema.dart';
@@ -10,17 +13,18 @@ import 'perfil_pantalla.dart';
 /// Pantalla principal con la barra inferior: Inicio · Estado · Perfil.
 /// Mantiene el sondeo de /mi/estado solo mientras la app está al frente.
 class PrincipalPantalla extends StatefulWidget {
-  const PrincipalPantalla({super.key, required this.api, this.datos});
+  const PrincipalPantalla({super.key, required this.api, this.datos, this.conServicio = true});
 
   final Api api;
   final Datos? datos; // para pruebas
+  final bool conServicio; // false en pruebas (sin Android)
 
   @override
   State<PrincipalPantalla> createState() => _PrincipalPantallaState();
 }
 
 class _PrincipalPantallaState extends State<PrincipalPantalla> with WidgetsBindingObserver {
-  late final Datos _datos = widget.datos ?? Datos(widget.api);
+  late final Datos _datos = widget.datos ?? Datos(widget.api, leerBateria: () => Battery().batteryLevel);
   int _pestana = 0;
 
   @override
@@ -28,11 +32,22 @@ class _PrincipalPantallaState extends State<PrincipalPantalla> with WidgetsBindi
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _datos.iniciar();
+    if (widget.conServicio) {
+      FlutterForegroundTask.addTaskDataCallback(_datos.recibirDelServicio);
+      _asegurarServicio();
+    }
+  }
+
+  /// Con sesión y permisos listos el seguimiento debe estar corriendo (decide solo si captura).
+  Future<void> _asegurarServicio() async {
+    await ServicioRastreo.asegurar();
+    ServicioRastreo.pedirEstado();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    if (widget.conServicio) FlutterForegroundTask.removeTaskDataCallback(_datos.recibirDelServicio);
     _datos.dispose();
     super.dispose();
   }
@@ -41,6 +56,7 @@ class _PrincipalPantallaState extends State<PrincipalPantalla> with WidgetsBindi
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _datos.iniciar();
+      if (widget.conServicio) _asegurarServicio();
     } else if (state == AppLifecycleState.paused) {
       _datos.pausar();
     }

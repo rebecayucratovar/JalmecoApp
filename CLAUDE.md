@@ -86,6 +86,10 @@ alerta; si luego llega otro `equipo_id` → alerta `cambio_equipo`. Sin IMEI (An
 - **Captura GPS:** un punto cada `gps_distancia_m` (25 m) recorridos, o cada `gps_intervalo_seg`
   (120 s) si está quieto. La velocidad la da el GPS del celular (no se calcula). La app guarda
   en SQLite y envía en lotes.
+- **Servicio de rastreo (app):** servicio en primer plano encendido mientras haya sesión (Android
+  no deja que una app cerrada lo arranque al marcar la entrada en Odoo). Fuera de jornada y en
+  el almuerzo NO usa el GPS: solo consulta `mi/estado` (cada 2 min) con notificación "Fuera de
+  jornada · No se registra tu ubicación". En jornada consulta cada 1 min y envía la cola cada 1 min.
 - **Seguimiento detenido:** si cierra sesión, quita el permiso o apaga el GPS en jornada, la
   app avisa (`mi/seguimiento-detenido`) → alerta al admin.
 - **Almuerzo / privacidad:** entre 12:00 y 13:00 (hora America/La_Paz) la app NO recolecta ni

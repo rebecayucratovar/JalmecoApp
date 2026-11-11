@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'pantallas/login_pantalla.dart';
 import 'pantallas/permisos_pantalla.dart';
 import 'pantallas/principal_pantalla.dart';
+import 'rastreo/servicio.dart';
 import 'servicios/api.dart';
 import 'servicios/dispositivo.dart';
 import 'servicios/permisos.dart';
@@ -12,8 +13,13 @@ import 'tema.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ServicioRastreo.configurar();
   final sesion = Sesion();
   await sesion.cargar();
+  // Sin sesión (cerró sesión o expiró) no debe quedar el seguimiento corriendo.
+  sesion.addListener(() {
+    if (!sesion.activa) ServicioRastreo.detener();
+  });
   final api = Api(sesion);
   if (sesion.activa) reportarEquipo(api); // cada vez que se abre la app
 
