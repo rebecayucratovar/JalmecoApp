@@ -16,6 +16,14 @@ def manejador_excepciones(exc, context):
         }
         return response
 
+    if isinstance(exc, exceptions.Throttled):
+        minutos = max(1, round((exc.wait or 60) / 60))
+        response.data = {
+            'error': f'Demasiados intentos. Vuelve a intentarlo en {minutos} min.',
+            'codigo': 'DEMASIADOS_INTENTOS',
+        }
+        return response
+
     codigo = exc.get_codes() if isinstance(exc, exceptions.APIException) else None
     data = response.data
     mensaje = data.get('detail', data) if isinstance(data, dict) else data

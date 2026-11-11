@@ -74,13 +74,16 @@ Celular: `celular_modelo` (lo autocompleta la app con device_info_plus) y `celul
   Fuera de jornada (sin jornada), En trayecto (velocidad alta), En parada (quieto),
   Sin conexión (sin datos). "En sucursal" y "En punto de trabajo" son Fase 2 (requieren
   la tabla `zona`).
-- **Almuerzo / privacidad:** entre 12:00 y 13:00 (hora America/La_Paz) la app apaga el GPS
-  por completo (no captura ni guarda nada) y el backend rechaza cualquier punto en esa franja.
+- **Horario laboral:** 08:00–12:00 y 13:00–18:00 (en `configuracion`: horario_inicio/fin).
+  Es informativo: la jornada real la marcan la entrada y salida de Odoo.
+- **Almuerzo / privacidad:** entre 12:00 y 13:00 (hora America/La_Paz) la app NO recolecta ni
+  guarda puntos, y el backend rechaza cualquier punto en esa franja.
 - **Huella:** la app pide confirmar identidad con la huella del celular en momentos aleatorios,
   ~2 veces al día (mínimo 1), vía notificación que abre la pantalla de verificación. Si no se
   responde en ~3 min → alerta al supervisor. (Las huellas se controlan con otra app de la
   empresa, así que solo la del técnico real está registrada en su equipo.)
-- **Offline:** sin señal, los puntos se guardan en SQLite y se envían al reconectar.
+- **Offline:** sin señal, los puntos se guardan en SQLite y se envían al reconectar. Se
+  guardan aunque la jornada ya se haya cerrado, si su hora cae dentro de ella.
 - **Retención:** borrar ubicaciones/recorridos más viejos que **12 meses** (configurable).
   El mismo valor se muestra en la app y en el admin. La asistencia vive en Odoo y no se toca.
 

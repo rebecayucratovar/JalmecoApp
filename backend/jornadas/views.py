@@ -3,6 +3,7 @@ from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.models import Configuracion
 from core.pausas import en_franja, franja_almuerzo, franjas_activas
 from ubicaciones.consultas import distancia_km
 from usuarios.permisos import EsTecnico
@@ -36,8 +37,8 @@ class MiEstadoView(APIView):
 
         datos = MiEstadoSerializer({
             'en_jornada': activa is not None,
-            'jornada': {'inicio': activa.inicio, 'horario': None} if activa else None,
-            # Cualquier franja de pausa activa implica GPS apagado
+            'jornada': {'inicio': activa.inicio, 'horario': Configuracion.actual().horario_texto} if activa else None,
+            # Dentro de una franja de pausa habilitada la app no captura ni guarda puntos
             'en_pausa_almuerzo': en_franja(ahora, franjas),
             'franja_almuerzo': {'inicio': almuerzo.hora_inicio, 'fin': almuerzo.hora_fin} if almuerzo else None,
             'resumen_hoy': {

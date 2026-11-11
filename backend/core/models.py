@@ -1,3 +1,5 @@
+import datetime
+
 from django.db import models
 
 
@@ -28,6 +30,10 @@ class Configuracion(models.Model):
     verificacion_limite_min = models.IntegerField(default=3)  # minutos para responder
     odoo_sync_min = models.IntegerField(default=2)  # cada cuánto leer asistencia
     espejo_odoo_min = models.IntegerField(default=8)  # subir última ubicación a Odoo
+    # Horario laboral esperado (el almuerzo está en franja_pausa). Solo informativo:
+    # la jornada real la marcan la entrada/salida de Odoo.
+    horario_inicio = models.TimeField(default=datetime.time(8, 0))
+    horario_fin = models.TimeField(default=datetime.time(18, 0))
 
     class Meta:
         db_table = 'configuracion'
@@ -36,3 +42,12 @@ class Configuracion(models.Model):
 
     def __str__(self):
         return 'Configuración del sistema'
+
+    @classmethod
+    def actual(cls):
+        """La única fila de configuración (la crea con valores por defecto si faltara)."""
+        return cls.objects.order_by('id').first() or cls.objects.create()
+
+    @property
+    def horario_texto(self):
+        return f'{self.horario_inicio:%H:%M}–{self.horario_fin:%H:%M}'

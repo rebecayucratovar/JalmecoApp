@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 class JornadaActualSerializer(serializers.Serializer):
     inicio = serializers.DateTimeField()
-    # Horario laboral esperado ("08:00–17:00"). Vendrá de Odoo; por ahora null.
+    # Horario laboral esperado, de Configuracion (ej. "08:00–18:00")
     horario = serializers.CharField(allow_null=True)
 
 

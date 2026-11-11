@@ -142,7 +142,9 @@ CREATE TABLE configuracion (
     verificaciones_por_dia   INT NOT NULL DEFAULT 2,    -- huellas por jornada
     verificacion_limite_min  INT NOT NULL DEFAULT 3,    -- minutos para responder
     odoo_sync_min            INT NOT NULL DEFAULT 2,    -- cada cuánto leer asistencia
-    espejo_odoo_min          INT NOT NULL DEFAULT 8     -- subir última ubicación a Odoo
+    espejo_odoo_min          INT NOT NULL DEFAULT 8,    -- subir última ubicación a Odoo
+    horario_inicio           TIME NOT NULL DEFAULT '08:00', -- horario laboral esperado
+    horario_fin              TIME NOT NULL DEFAULT '18:00'  -- (el almuerzo está en franja_pausa)
 );
 
 -- =====================================================================

@@ -23,15 +23,27 @@ VELOCIDAD_TRAYECTO_KMH = 5.0
 TOLERANCIA_FUTURO = timedelta(minutes=5)
 
 
-def _rechazar(punto, jornada, franjas, ahora):
-    """True si el punto no debe guardarse (fuera de jornada, en pausa o con hora imposible)."""
-    momento = punto['registrado_en']
-    return (
-        jornada is None
-        or momento < jornada.inicio
-        or momento > ahora + TOLERANCIA_FUTURO
-        or en_franja(momento, franjas)
+def _jornadas_del_lote(tecnico, puntos_validos):
+    """Jornadas (activas o cerradas) del técnico que se cruzan con el rango de horas del lote."""
+    if not puntos_validos:
+        return []
+    momentos = [p['registrado_en'] for p in puntos_validos]
+    return list(
+        Jornada.objects.filter(tecnico=tecnico, inicio__lte=max(momentos))
+        .filter(Q(fin__isnull=True) | Q(fin__gte=min(momentos)))
+        .order_by('inicio')
     )
+
+
+def _jornada_de(momento, jornadas):
+    """
+    La jornada que contiene `momento` (inicio ≤ momento ≤ fin; si sigue activa, sin fin).
+    Así se guardan también los puntos offline que llegan después de cerrada la jornada.
+    """
+    for j in jornadas:
+        if j.inicio <= momento and (j.fin is None or momento <= j.fin):
+            return j
+    return None
 
 
 def _estado_por_velocidad(velocidad):
@@ -64,18 +76,25 @@ class MisUbicacionesView(APIView):
 
         tecnico = request.user
         ahora = timezone.now()
-        jornada = (
-            Jornada.objects.filter(tecnico=tecnico, estado=Jornada.Estado.ACTIVA).order_by('-inicio').first()
-        )
         franjas = franjas_activas()
 
-        nuevas, rechazados = [], 0
+        # 1) Validar formato de cada punto (uno malo no tumba el lote)
+        validos, rechazados = [], 0
         for crudo in lote.validated_data['puntos']:
             punto = PuntoSerializer(data=crudo)
-            if not punto.is_valid() or _rechazar(punto.validated_data, jornada, franjas, ahora):
+            if punto.is_valid() and punto.validated_data['registrado_en'] <= ahora + TOLERANCIA_FUTURO:
+                validos.append(punto.validated_data)
+            else:
+                rechazados += 1
+
+        # 2) Ligar cada punto a SU jornada (activa o ya cerrada); fuera de jornada o en pausa → rechazo
+        jornadas = _jornadas_del_lote(tecnico, validos)
+        nuevas = []
+        for p in validos:
+            jornada = _jornada_de(p['registrado_en'], jornadas)
+            if jornada is None or en_franja(p['registrado_en'], franjas):
                 rechazados += 1
                 continue
-            p = punto.validated_data
             nuevas.append(Ubicacion(
                 tecnico=tecnico,
                 jornada=jornada,
@@ -86,10 +105,14 @@ class MisUbicacionesView(APIView):
                 registrado_en=p['registrado_en'],
             ))
 
+        # 3) Guardar. El "último estado" (mapa en vivo) solo se mueve con puntos de la jornada
+        #    ACTIVA: un punto atrasado de una jornada cerrada no debe mostrar al técnico en campo.
         if nuevas:
+            de_activa = [u for u in nuevas if u.jornada.estado == Jornada.Estado.ACTIVA]
             with transaction.atomic():
                 Ubicacion.objects.bulk_create(nuevas)
-                _actualizar_ultimo_estado(tecnico, max(nuevas, key=lambda u: u.registrado_en))
+                if de_activa:
+                    _actualizar_ultimo_estado(tecnico, max(de_activa, key=lambda u: u.registrado_en))
 
         respuesta = RespuestaUbicacionesSerializer({'recibidos': len(nuevas), 'rechazados': rechazados})
         return Response(respuesta.data)

@@ -1,7 +1,6 @@
 from rest_framework import exceptions
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .autenticacion import emitir_tokens, renovar_access
@@ -10,6 +9,7 @@ from .serializers import (
     LoginAdminRespuestaSerializer, LoginAdminSerializer, LoginTecnicoRespuestaSerializer,
     LoginTecnicoSerializer, RefreshRespuestaSerializer, RefreshSerializer,
 )
+from .throttles import LoginPorIPThrottle, LoginPorUsuarioThrottle
 
 
 def _credenciales_invalidas():
@@ -21,8 +21,11 @@ class _VistaPublica(APIView):
 
     authentication_classes = []
     permission_classes = [AllowAny]
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = 'login'
+    throttle_classes = [LoginPorUsuarioThrottle, LoginPorIPThrottle]
+
+    def get_authenticate_header(self, request):
+        # Sin clases de autenticación DRF convertiría el 401 en 403; credenciales malas = 401
+        return 'Bearer'
 
 
 class LoginAdminView(_VistaPublica):

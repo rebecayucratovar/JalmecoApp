@@ -35,6 +35,9 @@ Login del técnico (app móvil).
 ```
 → { "refresh": "jwt…" }   ← { "access": "jwt…" }
 ```
+- Access dura 60 min y refresh 30 días (configurable). Credenciales o tokens inválidos → 401.
+- Límite de intentos: 10 por hora **por usuario/email** y 60 por minuto por IP → 429
+  `DEMASIADOS_INTENTOS`.
 
 ---
 
@@ -61,12 +64,18 @@ Estado de la jornada actual (para la pantalla Inicio).
 ```
 ← {
     "en_jornada": true,
-    "jornada": { "inicio": "2026-11-07T08:02:00-04:00", "horario": "08:00–17:00" },
+    "jornada": { "inicio": "2026-11-07T08:02:00-04:00", "horario": "08:00–18:00" },
     "en_pausa_almuerzo": false,
     "franja_almuerzo": { "inicio": "12:00", "fin": "13:00" },
     "resumen_hoy": { "tiempo_jornada_min": 263, "distancia_km": 37.4 }
   }
 ```
+- `jornada` es `null` si no hay jornada activa. `horario` sale de la configuración (horario laboral).
+- `en_pausa_almuerzo`: la hora actual cae en una franja de pausa habilitada → la app no
+  captura ni guarda puntos.
+- `resumen_hoy.tiempo_jornada_min`: minutos de las jornadas de hoy (la activa cuenta hasta ahora).
+- `resumen_hoy.distancia_km`: kilómetros **recorridos** hoy (suma de tramos entre puntos
+  consecutivos; ignora puntos con precisión peor que 50 m). No es la distancia en línea recta.
 
 ### POST /mi/ubicaciones
 Enviar puntos GPS (en lote; soporta los acumulados offline).
@@ -76,6 +85,12 @@ Enviar puntos GPS (en lote; soporta los acumulados offline).
        "bateria": 90, "registrado_en": "2026-11-07T11:30:00-04:00" }, … ] }
 ← { "recibidos": 12, "rechazados": 0 }   // rechazados: fuera de jornada o en almuerzo
 ```
+- `velocidad` en **km/h** (geolocator entrega m/s: la app multiplica × 3.6).
+- Máximo 1000 puntos por lote. Cada punto se valida por separado: uno malo no invalida el lote.
+- Cada punto se liga a la jornada que contiene su `registrado_en`, **aunque esa jornada ya se
+  haya cerrado** (puntos offline que llegan al reconectar). Se rechaza si no cae en ninguna
+  jornada, si cae en una franja de pausa, si tiene datos inválidos o si está más de 5 min en el futuro.
+- Solo los puntos de la jornada **activa** actualizan la última posición/estado (mapa en vivo).
 
 ### PUT /mi/dispositivo
 Reportar marca/modelo del celular (autocompletado por la app).
@@ -182,6 +197,7 @@ Datos del administrador y cambio de contraseña.
 - El **mapa en vivo** usa los campos `ultima_*` del técnico (rápido); el **recorrido** lee las
   `ubicacion` de la jornada (más pesado, solo al abrir el detalle).
 - El backend **rechaza** puntos fuera de jornada o dentro del almuerzo (por eso `rechazados`).
+  Los puntos offline de una jornada ya cerrada se guardan igual si su hora cae dentro de ella.
 - Las verificaciones y el espejo a Odoo los dispara el **worker**, no son endpoints del panel.
 - El panel refresca el mapa por **sondeo** (`GET /mapa-en-vivo` cada ~10 s).
 - Cada endpoint valida el rol: un técnico solo accede a `/mi/*`; el admin a lo demás.

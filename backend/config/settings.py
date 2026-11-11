@@ -115,9 +115,10 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.BrowsableAPIRenderer',
     ),
     'EXCEPTION_HANDLER': 'config.excepciones.manejador_excepciones',
-    # Limita intentos de login (el PIN es de solo 6 dígitos)
+    # Límite de intentos de login/refresh (el PIN es de solo 6 dígitos). Ver usuarios/throttles.py
     'DEFAULT_THROTTLE_RATES': {
-        'login': os.getenv('LOGIN_THROTTLE', '10/min'),
+        'login_usuario': os.getenv('LOGIN_LIMITE_USUARIO', '10/hour'),
+        'login_ip': os.getenv('LOGIN_LIMITE_IP', '60/min'),
     },
     'UNAUTHENTICATED_USER': None,
 }
