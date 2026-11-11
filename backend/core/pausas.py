@@ -26,3 +26,35 @@ def franja_almuerzo(franjas):
         if f.nombre.strip().lower() == 'almuerzo':
             return f
     return franjas[0] if franjas else None
+
+
+# ---- Ayudas de "hora del día" (para el worker) ----
+
+def hoy_a_las(momento, hora):
+    """El mismo día local (La Paz) que `momento`, a la hora `hora` (datetime con zona)."""
+    local = timezone.localtime(momento)
+    return local.replace(hour=hora.hour, minute=hora.minute, second=0, microsecond=0)
+
+
+def _franjas_del_dia(momento, franjas):
+    """(inicio, fin) de cada franja en el día local de `momento` (se ignoran las que cruzan la medianoche)."""
+    return [(hoy_a_las(momento, f.hora_inicio), hoy_a_las(momento, f.hora_fin))
+            for f in franjas if f.hora_inicio < f.hora_fin]
+
+
+def minutos_utiles(desde, hasta, franjas):
+    """Minutos entre `desde` y `hasta` sin contar las franjas de pausa (0 si hasta ≤ desde)."""
+    if hasta <= desde:
+        return 0
+    total = (hasta - desde).total_seconds()
+    for ini, fin in _franjas_del_dia(desde, franjas):
+        solape = (min(hasta, fin) - max(desde, ini)).total_seconds()
+        if solape > 0:
+            total -= solape
+    return max(0, int(total // 60))
+
+
+def fin_ultima_franja(momento, franjas):
+    """Cuándo terminó hoy la última franja ya pasada (p. ej. 13:00 tras el almuerzo), o None."""
+    fines = [fin for _, fin in _franjas_del_dia(momento, franjas) if fin <= momento]
+    return max(fines) if fines else None

@@ -36,7 +36,9 @@ puede salir en jornada. MVP: La Paz; Santa Cruz entra con multi-sucursal (Fase 2
   `flutter_local_notifications`. Info del equipo: `device_info_plus`.
 - **Infra:** todo en Docker. Desarrollo local con `docker compose`. Producción en VPS
   (Contabo) con el mismo Docker. Respaldos al NAS. Mapa en vivo por sondeo (~10 s).
-- **Odoo:** Odoo.sh 17. Integración por API (xmlrpc/odoorpc).
+- **Odoo:** Odoo Online 17.0 Enterprise (`jalmeco.odoo.com`, no Odoo.sh). Integración por API
+  XML-RPC con clave API (`backend/odoo_sync/cliente.py`; probar con `manage.py probar_odoo`).
+  Ojo: en Odoo Online la API externa requiere el plan Custom.
 
 ## Estructura del monorepo
 
@@ -100,6 +102,11 @@ alerta; si luego llega otro `equipo_id` → alerta `cambio_equipo`. Sin IMEI (An
   empresa, así que solo la del técnico real está registrada en su equipo.)
 - **Offline:** sin señal, los puntos se guardan en SQLite y se envían al reconectar. Se
   guardan aunque la jornada ya se haya cerrado, si su hora cae dentro de ella.
+- **Worker** (contenedor `worker`, `manage.py worker`): cada 1 min cierra huellas vencidas,
+  sortea huellas (prob. faltan/minutos útiles hasta el fin del horario; separación 60 min; nunca
+  en el almuerzo ni en los primeros 10 min) y revisa "Sin conexión" (`sin_conexion_min`, el
+  almuerzo no cuenta); cada 5 min "Batería baja" (`bateria_baja_pct`, 1 por jornada); cada 24 h
+  la retención. Pendiente: sincronización con Odoo y correo de alertas.
 - **Retención:** borrar ubicaciones/recorridos más viejos que **12 meses** (configurable).
   El mismo valor se muestra en la app y en el admin. La asistencia vive en Odoo y no se toca.
 

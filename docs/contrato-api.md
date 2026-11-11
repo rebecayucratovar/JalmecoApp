@@ -226,14 +226,16 @@ GET /alertas?estado=nueva&tipo=sin_conexion&desde=…&hasta=…
 ```
 
 Tipos: `sin_conexion`, `bateria_baja`, `verificacion_no_realizada`, `cambio_equipo`,
-`seguimiento_detenido`. En el MVP el aviso al admin es por **correo** (SMS/WhatsApp: Fase 2).
+`seguimiento_detenido`. `sin_conexion` y `bateria_baja` las crea el worker (sin conexión: una por
+cada corte, sin contar el almuerzo; batería baja: una por jornada). En el MVP el aviso al admin es por **correo** (SMS/WhatsApp: Fase 2).
 
 ### POST /alertas/{id}/atender  ·  POST /alertas/atender-todas
 Marca una (o todas) como atendidas.
 
 ### GET /config  ·  PUT /config
 Configuración: horario laboral, almuerzo, retención (meses), verificación (por día, límite min),
-captura GPS (`gps_distancia_m`, `gps_intervalo_seg`) y Odoo (`odoo_sync_min`: 1 o 2 min).
+captura GPS (`gps_distancia_m`, `gps_intervalo_seg`), umbrales de alertas (`sin_conexion_min`: 10,
+`bateria_baja_pct`: 15) y Odoo (`odoo_sync_min`: 1 o 2 min).
 
 ### GET /odoo/estado  ·  POST /odoo/sincronizar
 Estado de la integración y disparar una sincronización manual.

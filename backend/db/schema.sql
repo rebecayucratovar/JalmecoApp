@@ -157,6 +157,10 @@ CREATE TABLE configuracion (
                              CHECK (gps_distancia_m BETWEEN 5 AND 500),
     gps_intervalo_seg        INT NOT NULL DEFAULT 120   -- …o cada N segundos si está quieto
                              CHECK (gps_intervalo_seg BETWEEN 30 AND 900),
+    sin_conexion_min         INT NOT NULL DEFAULT 10    -- alerta si no llegan datos en N min
+                             CHECK (sin_conexion_min BETWEEN 3 AND 60),
+    bateria_baja_pct         INT NOT NULL DEFAULT 15    -- alerta al bajar de N % (1 por jornada)
+                             CHECK (bateria_baja_pct BETWEEN 5 AND 50),
     odoo_ultima_sync_ok      TIMESTAMPTZ                -- última sincronización correcta (se pisa)
 );
 

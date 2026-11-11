@@ -41,6 +41,10 @@ class Configuracion(models.Model):
     # está quieto (así el panel sabe que sigue conectado aunque no se mueva).
     gps_distancia_m = models.IntegerField(default=25, validators=[MinValueValidator(5), MaxValueValidator(500)])
     gps_intervalo_seg = models.IntegerField(default=120, validators=[MinValueValidator(30), MaxValueValidator(900)])
+    # Alertas del worker: "Sin conexión" si no llegan datos en N minutos (en jornada, fuera del
+    # almuerzo) y "Batería baja" al bajar de N % (una vez por jornada).
+    sin_conexion_min = models.IntegerField(default=10, validators=[MinValueValidator(3), MaxValueValidator(60)])
+    bateria_baja_pct = models.IntegerField(default=15, validators=[MinValueValidator(5), MaxValueValidator(50)])
     # Estado (no es un parámetro): última sincronización correcta con Odoo. Se va pisando.
     odoo_ultima_sync_ok = models.DateTimeField(null=True, blank=True)
 
@@ -55,6 +59,10 @@ class Configuracion(models.Model):
                                    name='configuracion_gps_distancia_rango'),
             models.CheckConstraint(condition=Q(gps_intervalo_seg__gte=30, gps_intervalo_seg__lte=900),
                                    name='configuracion_gps_intervalo_rango'),
+            models.CheckConstraint(condition=Q(sin_conexion_min__gte=3, sin_conexion_min__lte=60),
+                                   name='configuracion_sin_conexion_rango'),
+            models.CheckConstraint(condition=Q(bateria_baja_pct__gte=5, bateria_baja_pct__lte=50),
+                                   name='configuracion_bateria_baja_rango'),
         ]
 
     def __str__(self):

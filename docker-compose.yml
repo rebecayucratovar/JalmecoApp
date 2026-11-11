@@ -30,5 +30,21 @@ services:
       db:
         condition: service_healthy
 
+  # Tareas periódicas (huellas al azar, alertas, retención; luego sincronización con Odoo).
+  # Misma imagen que el backend; un solo worker (las tareas no están pensadas para correr en paralelo).
+  worker:
+    build: ./backend
+    command: python manage.py worker
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: db
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   postgres_data:
