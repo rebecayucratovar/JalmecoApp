@@ -2,6 +2,15 @@
     <!-- Hablar con la API del backend -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- Ubicación: precisa + "todo el tiempo" (rastreo con el celular bloqueado, solo en jornada) -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+    <!-- Notificaciones (Android 13+): verificación de huella y avisos del seguimiento -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Pedir que el ahorro de batería no cierre la app (distribución interna, no Play Store) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+
     <application
         android:label="Jalmeco GPS"
         android:name="${applicationName}"

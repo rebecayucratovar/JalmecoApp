@@ -11,6 +11,7 @@ class Colores {
   static const textoSuave = Color(0xFF6B7280);
   static const borde = Color(0xFFE2E8F0);
   static const error = Color(0xFFDC2626);
+  static const exito = Color(0xFF15803D);
   static const aviso = Color(0xFFF97316); // naranja: solo avisos (p. ej. "Puntos por enviar")
 }
 

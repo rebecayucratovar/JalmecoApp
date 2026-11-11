@@ -17,6 +17,7 @@ dependencies:
   flutter_secure_storage: 10.3.4   # tokens de sesión cifrados
   device_info_plus: 12.4.0         # marca/modelo del equipo
   android_id: 0.5.2+1              # identificador del equipo (alerta cambio_equipo)
+  permission_handler: 12.0.1       # ubicación, notificaciones, batería
 
 dev_dependencies:
   flutter_test:
