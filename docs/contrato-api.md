@@ -179,7 +179,22 @@ KPIs del inicio.
 ```
 
 ### GET /tecnicos  ·  GET /tecnicos/{id}  ·  POST /tecnicos  ·  PUT /tecnicos/{id}
-Lista (con estado actual), detalle, alta y edición de técnicos.
+Lista (todo el personal, activos e inactivos), ficha, alta y edición.
+```
+← GET /tecnicos      { "tecnicos": [ TecnicoAdmin, … ] }
+← GET /tecnicos/{id}  TecnicoAdmin
+   TecnicoAdmin = TecnicoResumen + { jornada_inicio, usuario, activo, tiene_pin, pin_generado_en,
+                  equipo_modelo, equipo_registrado_en, odoo_employee_id, creado_en }
+→ POST / PUT { "nombre", "codigo"?, "usuario"?, "cargo"?, "celular_modelo"?, "celular_numero"?, "activo"? }
+← 201 / 200 TecnicoAdmin
+```
+- Fuera de jornada: sin ubicación (igual que en /mapa-en-vivo).
+- PUT cambia solo los campos enviados. No hay borrado: se desactiva (`activo: false`, no puede entrar).
+- `usuario` vacío = el código. Ni el usuario ni el código pueden repetirse entre personas (tampoco
+  cruzados), porque el login acepta cualquiera de los dos.
+- `celular_numero` se guarda como `+591 7XXXXXXX` (acepta "712 45830", "59171245830"…).
+- Si la persona viene de Odoo (`odoo_employee_id`), nombre, código, cargo y usuario se cambian en
+  Odoo → 400.
 
 ### POST /tecnicos/importar-odoo
 Importa empleados desde Odoo (nombre, código, cargo).
@@ -193,6 +208,8 @@ Genera o reinicia el PIN (se muestra una sola vez). Guarda `pin_generado_en`.
 ← { "pin": "292317", "generado_en": "…" }
 ```
 - En la lista/detalle: `tiene_pin` (false = "Sin PIN") y `pin_generado_en`.
+- PIN al azar sin patrones fáciles (111111, 123456…). Al reiniciarlo, las sesiones abiertas con el
+  PIN anterior dejan de valer: la app recibe 401 `SESION_REVOCADA` y vuelve al login.
 
 ### GET /tecnicos/{id}/recorrido?fecha=YYYY-MM-DD
 El recorrido del día (puntos + paradas + resumen) — para el mapa y la línea de tiempo.

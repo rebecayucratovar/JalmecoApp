@@ -20,10 +20,14 @@ export function fechaEncabezado(fecha: Date): string {
   return `${mayuscula(p.weekday)} ${p.day} de ${p.month} · ${p.hour}:${p.minute}`
 }
 
-/** Iniciales para el avatar: "Carla Rojas" → "CR". */
+/**
+ * Iniciales del nombre y el apellido paterno: "Carla Rojas" → "CR",
+ * "Wilmer Huanca Callisaya" → "WH", "Luis Fernando Choque Apaza" → "LC".
+ */
 export function iniciales(nombre: string): string {
-  const palabras = nombre.trim().split(/\s+/).filter(Boolean)
-  return ((palabras[0]?.[0] ?? '') + (palabras.length > 1 ? palabras[palabras.length - 1][0] : '')).toUpperCase()
+  const p = nombre.trim().split(/\s+/).filter(Boolean)
+  const apellido = p.length >= 4 ? p[2] : p[1]
+  return ((p[0]?.[0] ?? '') + (apellido?.[0] ?? '')).toUpperCase()
 }
 
 const formatoHora = new Intl.DateTimeFormat('es-BO', { timeZone: ZONA, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
@@ -47,4 +51,21 @@ export function haceCuanto(fecha: Date | string, ahora: Date = new Date()): stri
 /** Para buscar sin importar mayúsculas ni tildes: "Óscar Peña" → "oscar pena". */
 export function normalizar(texto: string): string {
   return texto.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
+}
+
+const formatoFecha = new Intl.DateTimeFormat('es-BO', { timeZone: ZONA, day: '2-digit', month: '2-digit', year: 'numeric' })
+const diaLaPaz = (d: Date) => formatoFecha.format(d)
+
+/** "Hoy, 16:45" · "Ayer, 09:10" · "15/09/2026" (hora de La Paz). */
+export function fechaCorta(fecha: Date | string, ahora: Date = new Date()): string {
+  const d = new Date(fecha)
+  if (diaLaPaz(d) === diaLaPaz(ahora)) return `Hoy, ${hora(d)}`
+  if (diaLaPaz(d) === diaLaPaz(new Date(ahora.getTime() - 86_400_000))) return `Ayer, ${hora(d)}`
+  return diaLaPaz(d)
+}
+
+/** "15/09/2026 08:02" (hora de La Paz). */
+export function fechaHora(fecha: Date | string): string {
+  const d = new Date(fecha)
+  return `${diaLaPaz(d)} ${hora(d)}`
 }

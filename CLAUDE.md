@@ -56,7 +56,8 @@ Flutter NO va en Docker. Backend + DB sí (incluye las librerías de mapas GDAL/
 - **administrador:** login del panel (email + password_hash).
 - **tecnico:** login de la app (usuario + pin_hash). Vinculado a Odoo por `odoo_employee_id`.
   El usuario es el de Odoo; si no tiene, su código JAL-XXXX (el login acepta ambos).
-  `pin_hash` NULL = "Sin PIN"; `pin_generado_en`. Campos de último estado denormalizados
+  `pin_hash` NULL = "Sin PIN"; `pin_generado_en`. El PIN lo genera el admin (se muestra una sola
+  vez); reiniciarlo revoca las sesiones abiertas (tokens con `iat` anterior → 401 SESION_REVOCADA). Campos de último estado denormalizados
   (estado_actual, ultima_lat/lng, ultima_bateria, ultima_velocidad, ultima_actualizacion)
   para el mapa en vivo.
 - **jornada:** de la entrada a la salida (de Odoo). Incluye ubicacion_inicio/fin.

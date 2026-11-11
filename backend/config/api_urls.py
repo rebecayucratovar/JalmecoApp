@@ -6,6 +6,7 @@ from ubicaciones.views import MapaEnVivoView, MisUbicacionesView
 from usuarios.views import (
     LoginAdminView, LoginTecnicoView, MiDispositivoView, MiPerfilView, MiSeguimientoDetenidoView, RefreshView,
 )
+from usuarios.panel import TecnicoPinView, TecnicosView, TecnicoView
 from verificaciones.views import MiResponderVerificacionView, MiVerificacionPendienteView
 
 urlpatterns = [
@@ -26,4 +27,7 @@ urlpatterns = [
 
     # Panel admin (rol administrador)
     path('mapa-en-vivo', MapaEnVivoView.as_view(), name='mapa-en-vivo'),
+    path('tecnicos', TecnicosView.as_view(), name='tecnicos'),
+    path('tecnicos/<int:pk>', TecnicoView.as_view(), name='tecnico'),
+    path('tecnicos/<int:pk>/pin', TecnicoPinView.as_view(), name='tecnico-pin'),
 ]

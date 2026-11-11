@@ -15,6 +15,8 @@ import { SECCIONES } from '@/secciones'
 
 // Pantallas pesadas (p. ej. el mapa con Leaflet) se cargan recién al abrirlas
 const MapaPagina = lazy(() => import('@/paginas/mapa/MapaPagina'))
+const TecnicosPagina = lazy(() => import('@/paginas/tecnicos/TecnicosPagina'))
+const TecnicoPagina = lazy(() => import('@/paginas/tecnicos/TecnicoPagina'))
 
 function Cargando() {
   return (
@@ -29,6 +31,7 @@ const diferida = (pantalla: ReactNode) => <Suspense fallback={<Cargando />}>{pan
 /** Secciones ya construidas (las demás muestran "en construcción"). */
 const PANTALLAS: Record<string, ReactNode> = {
   '/mapa': diferida(<MapaPagina />),
+  '/tecnicos': diferida(<TecnicosPagina />),
 }
 
 const router = createBrowserRouter([
@@ -38,7 +41,7 @@ const router = createBrowserRouter([
     children: [
       // Cada sección reemplaza su <Proximamente /> al construirse
       ...SECCIONES.map((s) => ({ path: s.ruta, element: PANTALLAS[s.ruta] ?? <Proximamente /> })),
-      { path: '/tecnicos/:id', element: <Proximamente /> }, // ficha y recorrido (paso 4)
+      { path: '/tecnicos/:id', element: diferida(<TecnicoPagina />) },
       { path: '*', element: <NoEncontrada /> },
     ],
   },

@@ -1,9 +1,9 @@
 import { BatteryLowIcon, BatteryMediumIcon, GaugeIcon, PhoneIcon, RouteIcon, XIcon } from 'lucide-react'
 import { Link } from 'react-router'
 
+import { AvatarEstado, EstadoChip } from '@/components/EstadoChip'
 import { Button } from '@/components/ui/button'
-import { infoEstado } from '@/lib/estados'
-import { haceCuanto, hora, iniciales } from '@/lib/formato'
+import { haceCuanto, hora } from '@/lib/formato'
 import { cn } from '@/lib/utils'
 
 import type { TecnicoMapa } from './datos'
@@ -11,7 +11,6 @@ import type { TecnicoMapa } from './datos'
 const BATERIA_BAJA = 15
 
 export function FichaTecnico({ tecnico: t, ahora, alCerrar }: { tecnico: TecnicoMapa; ahora: Date; alCerrar(): void }) {
-  const estado = infoEstado(t.estado_actual)
   const fuera = t.estado_actual === 'fuera_jornada'
   const bateriaBaja = t.ultima_bateria != null && t.ultima_bateria <= BATERIA_BAJA
 
@@ -21,22 +20,11 @@ export function FichaTecnico({ tecnico: t, ahora, alCerrar }: { tecnico: Tecnico
       className="w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border bg-card text-card-foreground shadow-lg"
     >
       <div className="flex items-start gap-3 p-4">
-        <span className="relative shrink-0">
-          <span className="flex size-12 items-center justify-center rounded-full bg-muted text-sm font-semibold">
-            {iniciales(t.nombre)}
-          </span>
-          <span className="absolute right-0 bottom-0 size-3.5 rounded-full ring-2 ring-card" style={{ background: estado.color }} />
-        </span>
+        <AvatarEstado nombre={t.nombre} estado={t.estado_actual} tamano="lg" />
         <div className="min-w-0 flex-1">
           <h2 className="truncate font-semibold leading-tight">{t.nombre}</h2>
           <p className="truncate text-xs text-muted-foreground">{[t.codigo, t.cargo].filter(Boolean).join(' · ') || '—'}</p>
-          <span
-            className="mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
-            style={{ color: estado.color, background: `color-mix(in srgb, ${estado.color} 14%, transparent)` }}
-          >
-            <span className="size-1.5 rounded-full" style={{ background: estado.color }} />
-            {estado.etiqueta}
-          </span>
+          <EstadoChip estado={t.estado_actual} className="mt-1.5" />
         </div>
         <Button variant="ghost" size="icon-sm" onClick={alCerrar} aria-label="Cerrar ficha">
           <XIcon />

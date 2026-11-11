@@ -11,7 +11,9 @@ describe('formato', () => {
 
   it('iniciales', () => {
     expect(iniciales('Carla Rojas')).toBe('CR')
-    expect(iniciales('  ana maría  pérez  ')).toBe('AP')
+    expect(iniciales('Wilmer Huanca Callisaya')).toBe('WH')
+    expect(iniciales('Luis Fernando Choque Apaza')).toBe('LC')
+    expect(iniciales('  ana   pérez  ')).toBe('AP')
     expect(iniciales('Juan')).toBe('J')
     expect(iniciales('')).toBe('')
   })

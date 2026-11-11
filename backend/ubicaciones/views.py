@@ -2,13 +2,14 @@ from datetime import timedelta
 
 from django.contrib.gis.geos import Point
 from django.db import transaction
-from django.db.models import Exists, OuterRef, Q, Subquery
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.pausas import en_franja, franjas_activas
 from jornadas.models import Jornada
+from usuarios.consultas import con_jornada
 from usuarios.models import Tecnico
 from usuarios.permisos import EsAdmin, EsTecnico
 
@@ -128,9 +129,6 @@ class MapaEnVivoView(APIView):
     permission_classes = [EsAdmin]
 
     def get(self, request):
-        jornada_activa = Jornada.objects.filter(tecnico=OuterRef('pk'), estado=Jornada.Estado.ACTIVA)
-        tecnicos = (Tecnico.objects.filter(activo=True)
-                    .annotate(en_jornada=Exists(jornada_activa), jornada_inicio=Subquery(jornada_activa.values('inicio')[:1]))
-                    .order_by('nombre'))
+        tecnicos = con_jornada(Tecnico.objects.filter(activo=True)).order_by('nombre')
         datos = MapaEnVivoSerializer({'actualizado_en': timezone.now(), 'tecnicos': tecnicos})
         return Response(datos.data)

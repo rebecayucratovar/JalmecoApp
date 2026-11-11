@@ -38,14 +38,32 @@ def cargar_usuario(tipo, uid):
     return modelo.objects.filter(pk=uid, activo=True).first()
 
 
+def sesion_revocada(usuario, token):
+    """
+    True si el token es anterior al último PIN generado: al reiniciar el PIN de un técnico,
+    las sesiones abiertas con el anterior dejan de valer (el access hereda el `iat` del refresh).
+    """
+    generado = getattr(usuario, 'pin_generado_en', None)
+    emitido = token.get('iat')
+    return bool(generado and emitido is not None and emitido < int(generado.timestamp()))
+
+
+def _revocada():
+    return exceptions.AuthenticationFailed(
+        'Tu PIN fue reiniciado. Vuelve a iniciar sesión con el PIN nuevo.', code='sesion_revocada')
+
+
 def renovar_access(refresh_str):
     """Valida un refresh token y devuelve un nuevo access token."""
     try:
         refresh = RefreshToken(refresh_str)
     except TokenError:
         raise exceptions.AuthenticationFailed('Refresh token inválido o expirado.', code='token_invalido')
-    if cargar_usuario(refresh.get('tipo'), refresh.get('uid')) is None:
+    usuario = cargar_usuario(refresh.get('tipo'), refresh.get('uid'))
+    if usuario is None:
         raise exceptions.AuthenticationFailed('Usuario inexistente o inactivo.', code='usuario_inactivo')
+    if sesion_revocada(usuario, refresh):
+        raise _revocada()
     return str(refresh.access_token)
 
 
@@ -72,6 +90,8 @@ class JWTUsuarioAuthentication(BaseAuthentication):
         usuario = cargar_usuario(token.get('tipo'), token.get('uid'))
         if usuario is None:
             raise exceptions.AuthenticationFailed('Usuario inexistente o inactivo.', code='usuario_inactivo')
+        if sesion_revocada(usuario, token):
+            raise _revocada()
         return (usuario, token)
 
     def authenticate_header(self, request):
