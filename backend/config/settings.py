@@ -178,3 +178,17 @@ ODOO_URL = os.getenv('ODOO_URL', '')  # p. ej. https://jalmeco.odoo.com
 ODOO_DB = os.getenv('ODOO_DB', '')
 ODOO_USUARIO = os.getenv('ODOO_USUARIO', '')  # login (email) del usuario de integración
 ODOO_API_KEY = os.getenv('ODOO_API_KEY', '')  # clave API de ese usuario (no su contraseña)
+
+# Correo (alertas al administrador). Sin EMAIL_HOST los correos solo se muestran en el log
+# del worker (modo prueba). Gmail: smtp.gmail.com, 587, TLS y una "contraseña de aplicación".
+EMAIL_HOST = os.getenv('EMAIL_HOST', '')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_TIMEOUT = 20
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', '') or f'Jalmeco GPS <{EMAIL_HOST_USER or "no-responder@localhost"}>'
+EMAIL_BACKEND = ('django.core.mail.backends.smtp.EmailBackend' if EMAIL_HOST
+                 else 'django.core.mail.backends.console.EmailBackend')
+# Enlace al panel en los correos (opcional)
+PANEL_URL = os.getenv('PANEL_URL', '')

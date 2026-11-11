@@ -70,7 +70,7 @@ docker compose exec backend python manage.py createsuperuser
 > y `DB_PASSWORD` en tu terminal o ejecuta `docker compose --env-file backend/.env up`.
 
 Variables de entorno (`backend/.env`): `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `DB_NAME`, `DB_USER`,
-`DB_PASSWORD`, `DB_HOST`, `DB_PORT` y `ODOO_*` (ver `.env.example`). **Nunca subas `.env` al repositorio**, solo `.env.example`.
+`DB_PASSWORD`, `DB_HOST`, `DB_PORT` `ODOO_*` y `EMAIL_*` (ver `.env.example`). **Nunca subas `.env` al repositorio**, solo `.env.example`.
 
 ### Entorno virtual local (opcional, para el editor)
 

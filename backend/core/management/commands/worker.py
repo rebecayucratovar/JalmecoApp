@@ -10,6 +10,7 @@ Tareas (cada una aislada: si una falla, se registra el error y las demás siguen
 - Sorteo de huellas al azar (~2 por día) .................. cada 1 min
 - Alerta "Sin conexión" ................................... cada 1 min
 - Alerta "Batería baja" ................................... cada 5 min
+- Correo al administrador con las alertas nuevas ......... cada 1 min
 - Retención: borrar datos de más de N meses ............... cada 24 h (y al arrancar)
 - (Pendiente) Sincronización con Odoo: asistencia → jornadas
 """
@@ -22,6 +23,7 @@ from typing import Callable
 from django.core.management.base import BaseCommand
 from django.db import close_old_connections
 
+from alertas.correo import enviar_pendientes
 from alertas.servicios import revisar_bateria, revisar_sin_conexion
 from core.models import Configuracion
 from core.retencion import limpiar
@@ -46,6 +48,7 @@ def _tareas():
         Tarea('sorteo de huellas', 60, lambda: verificaciones.programar(paso_min=1)),
         Tarea('sin conexión', 60, revisar_sin_conexion),
         Tarea('batería baja', 300, revisar_bateria),
+        Tarea('correo de alertas', 60, enviar_pendientes),
         Tarea('retención', 24 * 3600, lambda: limpiar(Configuracion.actual().retencion_meses)),
     ]
 

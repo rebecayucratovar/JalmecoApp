@@ -36,9 +36,9 @@ puede salir en jornada. MVP: La Paz; Santa Cruz entra con multi-sucursal (Fase 2
   `flutter_local_notifications`. Info del equipo: `device_info_plus`.
 - **Infra:** todo en Docker. Desarrollo local con `docker compose`. Producción en VPS
   (Contabo) con el mismo Docker. Respaldos al NAS. Mapa en vivo por sondeo (~10 s).
-- **Odoo:** Odoo Online 17.0 Enterprise (`jalmeco.odoo.com`, no Odoo.sh). Integración por API
-  XML-RPC con clave API (`backend/odoo_sync/cliente.py`; probar con `manage.py probar_odoo`).
-  Ojo: en Odoo Online la API externa requiere el plan Custom.
+- **Odoo:** Odoo.sh 17.0 Enterprise (`jalmeco.odoo.com`, base `appexbo-elevatec-main-12589680`,
+  con módulos a medida del partner: p. ej. ubicación y estado en hr.attendance). Integración
+  por API XML-RPC con clave API (`backend/odoo_sync/cliente.py`; probar con `manage.py probar_odoo`).
 
 ## Estructura del monorepo
 
@@ -105,8 +105,11 @@ alerta; si luego llega otro `equipo_id` → alerta `cambio_equipo`. Sin IMEI (An
 - **Worker** (contenedor `worker`, `manage.py worker`): cada 1 min cierra huellas vencidas,
   sortea huellas (prob. faltan/minutos útiles hasta el fin del horario; separación 60 min; nunca
   en el almuerzo ni en los primeros 10 min) y revisa "Sin conexión" (`sin_conexion_min`, el
-  almuerzo no cuenta); cada 5 min "Batería baja" (`bateria_baja_pct`, 1 por jornada); cada 24 h
-  la retención. Pendiente: sincronización con Odoo y correo de alertas.
+  almuerzo no cuenta; 30 min por defecto porque en el ducto del ascensor se pierde la señal hasta
+  ~30 min); cada 5 min "Batería baja" (`bateria_baja_pct`, 1 por jornada); cada 1 min un correo
+  con las alertas nuevas a `alertas_correos` (vacío = admins activos; SMTP en `.env`); cada 24 h
+  la retención. Pendiente: sincronización con Odoo. Mientras no exista el panel, la
+  configuración se edita en el admin de Django (/admin).
 - **Retención:** borrar ubicaciones/recorridos más viejos que **12 meses** (configurable).
   El mismo valor se muestra en la app y en el admin. La asistencia vive en Odoo y no se toca.
 

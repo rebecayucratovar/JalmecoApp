@@ -43,6 +43,8 @@ class Alerta(models.Model):
         null=True, blank=True, db_column='atendida_por',
     )
     atendida_en = models.DateTimeField(null=True, blank=True)
+    # Cuándo se avisó por correo (NULL = falta enviarla; la envía el worker)
+    notificada_en = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'alerta'

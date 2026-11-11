@@ -42,9 +42,13 @@ class Configuracion(models.Model):
     gps_distancia_m = models.IntegerField(default=25, validators=[MinValueValidator(5), MaxValueValidator(500)])
     gps_intervalo_seg = models.IntegerField(default=120, validators=[MinValueValidator(30), MaxValueValidator(900)])
     # Alertas del worker: "Sin conexión" si no llegan datos en N minutos (en jornada, fuera del
-    # almuerzo) y "Batería baja" al bajar de N % (una vez por jornada).
-    sin_conexion_min = models.IntegerField(default=10, validators=[MinValueValidator(3), MaxValueValidator(60)])
+    # almuerzo) y "Batería baja" al bajar de N % (una vez por jornada). 30 min porque dentro del
+    # ducto del ascensor se pierde la señal durante un mantenimiento (dura hasta ~30 min).
+    sin_conexion_min = models.IntegerField(default=30, validators=[MinValueValidator(3), MaxValueValidator(120)])
     bateria_baja_pct = models.IntegerField(default=15, validators=[MinValueValidator(5), MaxValueValidator(50)])
+    # A quién se envían las alertas por correo (separados por coma). Vacío = a todos los
+    # administradores activos.
+    alertas_correos = models.TextField(blank=True, default='')
     # Estado (no es un parámetro): última sincronización correcta con Odoo. Se va pisando.
     odoo_ultima_sync_ok = models.DateTimeField(null=True, blank=True)
 
@@ -59,7 +63,7 @@ class Configuracion(models.Model):
                                    name='configuracion_gps_distancia_rango'),
             models.CheckConstraint(condition=Q(gps_intervalo_seg__gte=30, gps_intervalo_seg__lte=900),
                                    name='configuracion_gps_intervalo_rango'),
-            models.CheckConstraint(condition=Q(sin_conexion_min__gte=3, sin_conexion_min__lte=60),
+            models.CheckConstraint(condition=Q(sin_conexion_min__gte=3, sin_conexion_min__lte=120),
                                    name='configuracion_sin_conexion_rango'),
             models.CheckConstraint(condition=Q(bateria_baja_pct__gte=5, bateria_baja_pct__lte=50),
                                    name='configuracion_bateria_baja_rango'),
@@ -72,6 +76,14 @@ class Configuracion(models.Model):
     def actual(cls):
         """La única fila de configuración (la crea con valores por defecto si faltara)."""
         return cls.objects.order_by('id').first() or cls.objects.create()
+
+    def destinatarios_alertas(self):
+        """Correos que reciben las alertas (los de `alertas_correos`, o los administradores activos)."""
+        correos = [c.strip() for c in self.alertas_correos.replace(';', ',').split(',') if c.strip()]
+        if correos:
+            return correos
+        from usuarios.models import Administrador
+        return list(Administrador.objects.filter(activo=True).values_list('email', flat=True))
 
     @property
     def horario_texto(self):

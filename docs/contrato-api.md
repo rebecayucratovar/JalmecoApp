@@ -234,8 +234,9 @@ Marca una (o todas) como atendidas.
 
 ### GET /config  ·  PUT /config
 Configuración: horario laboral, almuerzo, retención (meses), verificación (por día, límite min),
-captura GPS (`gps_distancia_m`, `gps_intervalo_seg`), umbrales de alertas (`sin_conexion_min`: 10,
-`bateria_baja_pct`: 15) y Odoo (`odoo_sync_min`: 1 o 2 min).
+captura GPS (`gps_distancia_m`, `gps_intervalo_seg`), umbrales de alertas (`sin_conexion_min`: 30,
+`bateria_baja_pct`: 15), destinatarios del correo de alertas (`alertas_correos`, separados por
+coma; vacío = administradores activos) y Odoo (`odoo_sync_min`: 1 o 2 min).
 
 ### GET /odoo/estado  ·  POST /odoo/sincronizar
 Estado de la integración y disparar una sincronización manual.

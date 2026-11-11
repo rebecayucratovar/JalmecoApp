@@ -5,6 +5,9 @@ from zoneinfo import ZoneInfo
 from django.contrib.gis.geos import Point
 from django.test import TestCase
 
+from django.core import mail
+
+from alertas.correo import enviar_pendientes
 from alertas.models import Alerta
 from alertas.servicios import revisar_bateria, revisar_sin_conexion
 from core.models import Configuracion
@@ -12,7 +15,7 @@ from core.pausas import fin_ultima_franja, franjas_activas, minutos_utiles
 from core.retencion import limpiar, restar_meses
 from jornadas.models import Jornada
 from ubicaciones.models import Ubicacion
-from usuarios.models import Tecnico
+from usuarios.models import Administrador, Tecnico
 from verificaciones import servicios as verificaciones
 from verificaciones.models import Verificacion
 
@@ -93,10 +96,11 @@ class SorteoHuellasTest(Base):
 
 class SinConexionTest(Base):
     def test_alerta_una_vez_por_corte(self):
+        # Umbral por defecto: 30 min (un mantenimiento en el ducto del ascensor no alerta)
         self.jornada(lp(11, 8), ultima_actualizacion=lp(11, 9), estado_actual=Tecnico.Estado.EN_PARADA)
-        self.assertEqual(revisar_sin_conexion(lp(11, 9, 5)), 0)  # 5 min: todavía no
-        self.assertEqual(revisar_sin_conexion(lp(11, 9, 10)), 1)
-        self.assertEqual(revisar_sin_conexion(lp(11, 9, 20)), 0)  # mismo corte
+        self.assertEqual(revisar_sin_conexion(lp(11, 9, 25)), 0)
+        self.assertEqual(revisar_sin_conexion(lp(11, 9, 30)), 1)
+        self.assertEqual(revisar_sin_conexion(lp(11, 9, 45)), 0)  # mismo corte
         self.tecnico.refresh_from_db()
         self.assertEqual(self.tecnico.estado_actual, Tecnico.Estado.SIN_CONEXION)
         self.assertIn('desde las 09:00', Alerta.objects.get().mensaje)
@@ -104,17 +108,22 @@ class SinConexionTest(Base):
         # Vuelve a enviar y se corta de nuevo → otra alerta
         Tecnico.objects.filter(pk=self.tecnico.pk).update(ultima_actualizacion=lp(11, 10),
                                                           estado_actual=Tecnico.Estado.EN_PARADA)
-        self.assertEqual(revisar_sin_conexion(lp(11, 10, 15)), 1)
+        self.assertEqual(revisar_sin_conexion(lp(11, 10, 35)), 1)
+
+    def test_umbral_configurable(self):
+        Configuracion.objects.update(sin_conexion_min=10)
+        self.jornada(lp(11, 8), ultima_actualizacion=lp(11, 9))
+        self.assertEqual(revisar_sin_conexion(lp(11, 9, 10)), 1)
 
     def test_el_almuerzo_no_cuenta_como_corte(self):
         self.jornada(lp(11, 8), ultima_actualizacion=lp(11, 11, 59))
-        self.assertEqual(revisar_sin_conexion(lp(11, 12, 30)), 0)
-        self.assertEqual(revisar_sin_conexion(lp(11, 13, 5)), 0)  # cuenta desde las 13:00
-        self.assertEqual(revisar_sin_conexion(lp(11, 13, 10)), 1)
+        self.assertEqual(revisar_sin_conexion(lp(11, 12, 45)), 0)
+        self.assertEqual(revisar_sin_conexion(lp(11, 13, 20)), 0)  # cuenta desde las 13:00
+        self.assertEqual(revisar_sin_conexion(lp(11, 13, 30)), 1)
 
     def test_marco_entrada_y_el_celular_nunca_envio(self):
         self.jornada(lp(11, 8), ultima_actualizacion=lp(10, 17))  # dato de ayer
-        self.assertEqual(revisar_sin_conexion(lp(11, 8, 10)), 1)
+        self.assertEqual(revisar_sin_conexion(lp(11, 8, 30)), 1)
         self.assertIn('Marcó entrada a las 08:00', Alerta.objects.get().mensaje)
 
 
@@ -149,3 +158,36 @@ class RetencionTest(Base):
         self.assertEqual(borrado, {'ubicacion': 1, 'jornada': 1})
         self.assertEqual(list(Jornada.objects.all()), [nueva])
         self.assertEqual(Ubicacion.objects.count(), 1)
+
+
+class CorreoAlertasTest(Base):
+    def alerta(self, creada_en, **campos):
+        datos = {'tipo': Alerta.Tipo.BATERIA_BAJA, 'mensaje': 'Batería del celular al 12 %.', **campos}
+        return Alerta.objects.create(tecnico=self.tecnico, creada_en=creada_en, **datos)
+
+    def test_un_correo_con_las_nuevas_y_no_repite(self):
+        Configuracion.objects.update(alertas_correos='jefe@jalmeco.com, otro@jalmeco.com')
+        self.alerta(lp(11, 10))
+        self.alerta(lp(11, 10, 5), tipo=Alerta.Tipo.VERIFICACION_NO_REALIZADA, nivel=Alerta.Nivel.CRITICO)
+        self.assertEqual(enviar_pendientes(lp(11, 10, 6)), 2)
+        self.assertEqual(len(mail.outbox), 1)
+        correo = mail.outbox[0]
+        self.assertEqual(correo.to, ['jefe@jalmeco.com', 'otro@jalmeco.com'])
+        self.assertEqual(correo.subject, 'Jalmeco GPS · 2 alertas nuevas (1 críticas)')
+        self.assertIn('[CRÍTICA] Verificación no realizada — Juan Pérez (JAL-0001)', correo.body)
+        self.assertEqual(enviar_pendientes(lp(11, 10, 7)), 0)  # ya avisadas
+
+    def test_sin_lista_va_a_los_administradores_activos(self):
+        Administrador.objects.create(nombre='Ana', email='ana@jalmeco.com', password_hash='x')
+        Administrador.objects.create(nombre='Ex', email='ex@jalmeco.com', password_hash='x', activo=False)
+        self.alerta(lp(11, 10))
+        enviar_pendientes(lp(11, 10, 1))
+        self.assertEqual(mail.outbox[0].to, ['ana@jalmeco.com'])
+        self.assertEqual(mail.outbox[0].subject, 'Jalmeco GPS · Batería baja — Juan Pérez')
+
+    def test_no_envia_viejas_ni_atendidas(self):
+        Configuracion.objects.update(alertas_correos='jefe@jalmeco.com')
+        self.alerta(lp(11, 1))  # de hace 9 h
+        self.alerta(lp(11, 9, 59), estado=Alerta.Estado.ATENDIDA)
+        self.assertEqual(enviar_pendientes(lp(11, 10)), 0)
+        self.assertEqual(mail.outbox, [])

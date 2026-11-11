@@ -112,7 +112,8 @@ CREATE TABLE alerta (
     estado        VARCHAR(10)  NOT NULL DEFAULT 'nueva'
                   CHECK (estado IN ('nueva','atendida')),
     atendida_por  INT          REFERENCES administrador(id) ON DELETE SET NULL,
-    atendida_en   TIMESTAMPTZ
+    atendida_en   TIMESTAMPTZ,
+    notificada_en TIMESTAMPTZ                -- aviso por correo (NULL = falta enviar)
 );
 
 -- ---------------------------------------------------------------------
@@ -157,10 +158,11 @@ CREATE TABLE configuracion (
                              CHECK (gps_distancia_m BETWEEN 5 AND 500),
     gps_intervalo_seg        INT NOT NULL DEFAULT 120   -- …o cada N segundos si está quieto
                              CHECK (gps_intervalo_seg BETWEEN 30 AND 900),
-    sin_conexion_min         INT NOT NULL DEFAULT 10    -- alerta si no llegan datos en N min
-                             CHECK (sin_conexion_min BETWEEN 3 AND 60),
+    sin_conexion_min         INT NOT NULL DEFAULT 30    -- alerta si no llegan datos en N min
+                             CHECK (sin_conexion_min BETWEEN 3 AND 120),
     bateria_baja_pct         INT NOT NULL DEFAULT 15    -- alerta al bajar de N % (1 por jornada)
                              CHECK (bateria_baja_pct BETWEEN 5 AND 50),
+    alertas_correos          TEXT NOT NULL DEFAULT '',  -- destinatarios (coma); vacío = admins activos
     odoo_ultima_sync_ok      TIMESTAMPTZ                -- última sincronización correcta (se pisa)
 );
 
