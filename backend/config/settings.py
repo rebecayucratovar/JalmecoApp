@@ -172,3 +172,9 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Odoo (integración por XML-RPC). Ver odoo_sync/cliente.py y `python manage.py probar_odoo`.
+ODOO_URL = os.getenv('ODOO_URL', '')  # p. ej. https://jalmeco.odoo.com
+ODOO_DB = os.getenv('ODOO_DB', '')
+ODOO_USUARIO = os.getenv('ODOO_USUARIO', '')  # login (email) del usuario de integración
+ODOO_API_KEY = os.getenv('ODOO_API_KEY', '')  # clave API de ese usuario (no su contraseña)
