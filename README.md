@@ -92,7 +92,7 @@ npm install
 npm run dev
 ```
 
-Abre http://localhost:5173
+Abre http://localhost:5173 (con el backend levantado). Detalles en [web-admin/README.md](web-admin/README.md).
 
 ## 3. Mobile (Flutter, Android)
 
