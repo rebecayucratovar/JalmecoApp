@@ -3,6 +3,7 @@ import { NavLink } from 'react-router'
 
 import logo from '@/assets/logo_circulo.png'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useResumenAlertas } from '@/lib/alertas'
 import { cn } from '@/lib/utils'
 import { SECCIONES } from '@/secciones'
 
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function MenuLateral({ contraido, alContraer, alNavegar }: Props) {
+  const nuevas = useResumenAlertas().data?.nuevas ?? 0
   return (
     <nav
       aria-label="Menú principal"
@@ -49,8 +51,24 @@ export function MenuLateral({ contraido, alContraer, alNavegar }: Props) {
                 )
               }
             >
-              <Icono className="size-[18px] shrink-0" aria-hidden />
-              {contraido ? <span className="sr-only">{titulo}</span> : <span className="truncate">{titulo}</span>}
+              <span className="relative shrink-0">
+                <Icono className="size-[18px]" aria-hidden />
+                {ruta === '/alertas' && nuevas > 0 && contraido && (
+                  <span className="absolute -top-1 -right-1 size-2 rounded-full bg-aviso ring-2 ring-sidebar" aria-hidden />
+                )}
+              </span>
+              {contraido ? (
+                <span className="sr-only">{titulo}{ruta === '/alertas' && nuevas > 0 ? ` (${nuevas} nuevas)` : ''}</span>
+              ) : (
+                <>
+                  <span className="flex-1 truncate">{titulo}</span>
+                  {ruta === '/alertas' && nuevas > 0 && (
+                    <span className="min-w-5 rounded-full bg-aviso px-1.5 text-center text-xs font-semibold leading-5 text-white tabular-nums" aria-label={`${nuevas} nuevas`}>
+                      {nuevas > 99 ? '99+' : nuevas}
+                    </span>
+                  )}
+                </>
+              )}
             </NavLink>
           )
           return (

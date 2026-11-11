@@ -1,5 +1,4 @@
-import { BellIcon, ChevronDownIcon, LogOutIcon, MenuIcon, MoonIcon, SunIcon } from 'lucide-react'
-import { Link } from 'react-router'
+import { ChevronDownIcon, LogOutIcon, MenuIcon, MoonIcon, SunIcon } from 'lucide-react'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -16,6 +15,8 @@ import { fechaEncabezado, iniciales } from '@/lib/formato'
 import { useSesion } from '@/lib/sesion'
 import { useTema } from '@/lib/tema'
 import { useAhora } from '@/lib/useAhora'
+
+import { CampanaAlertas } from './CampanaAlertas'
 
 export function Encabezado({ titulo, alAbrirMenu }: { titulo: string; alAbrirMenu: () => void }) {
   const ahora = useAhora(15_000)
@@ -48,17 +49,7 @@ export function Encabezado({ titulo, alAbrirMenu }: { titulo: string; alAbrirMen
         <TooltipContent>{oscuro ? 'Tema claro' : 'Tema oscuro'}</TooltipContent>
       </Tooltip>
 
-      {/* El número de alertas nuevas se agrega con la pantalla de Alertas */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" asChild>
-            <Link to="/alertas" aria-label="Alertas">
-              <BellIcon />
-            </Link>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Alertas</TooltipContent>
-      </Tooltip>
+      <CampanaAlertas />
 
       <div className="mx-1 hidden h-8 w-px bg-border sm:block" aria-hidden />
 

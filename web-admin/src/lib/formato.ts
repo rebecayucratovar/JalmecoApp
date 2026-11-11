@@ -69,3 +69,15 @@ export function fechaHora(fecha: Date | string): string {
   const d = new Date(fecha)
   return `${diaLaPaz(d)} ${hora(d)}`
 }
+
+/** Fecha de hoy en La Paz, "AAAA-MM-DD". */
+export function hoyLaPaz(ahora: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: ZONA }).format(ahora)
+}
+
+/** "2026-11-11" + 1 → "2026-11-12". */
+export function sumarDias(fecha: string, dias: number): string {
+  const d = new Date(`${fecha}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + dias)
+  return d.toISOString().slice(0, 10)
+}

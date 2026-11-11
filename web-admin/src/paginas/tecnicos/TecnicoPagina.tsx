@@ -1,5 +1,6 @@
 import {
   ArrowLeftIcon,
+  BellIcon,
   KeyRoundIcon,
   Loader2Icon,
   MapPinIcon,
@@ -88,6 +89,9 @@ function Ficha({ tecnico: t }: { tecnico: TecnicoAdmin }) {
               <a href={`tel:${t.celular_numero.replace(/\s+/g, '')}`}><PhoneIcon /> Llamar</a>
             </Button>
           )}
+          <Button variant="outline" asChild>
+            <Link to={`/alertas?tecnico=${t.id}&estado=todas&rango=30`}><BellIcon /> Alertas</Link>
+          </Button>
           <Button variant="outline" onClick={() => setEditando(true)}><PencilIcon /> Editar</Button>
           {enMapa && (
             <Button asChild>

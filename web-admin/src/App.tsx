@@ -17,6 +17,7 @@ import { SECCIONES } from '@/secciones'
 const MapaPagina = lazy(() => import('@/paginas/mapa/MapaPagina'))
 const TecnicosPagina = lazy(() => import('@/paginas/tecnicos/TecnicosPagina'))
 const TecnicoPagina = lazy(() => import('@/paginas/tecnicos/TecnicoPagina'))
+const AlertasPagina = lazy(() => import('@/paginas/alertas/AlertasPagina'))
 
 function Cargando() {
   return (
@@ -32,6 +33,7 @@ const diferida = (pantalla: ReactNode) => <Suspense fallback={<Cargando />}>{pan
 const PANTALLAS: Record<string, ReactNode> = {
   '/mapa': diferida(<MapaPagina />),
   '/tecnicos': diferida(<TecnicosPagina />),
+  '/alertas': diferida(<AlertasPagina />),
 }
 
 const router = createBrowserRouter([

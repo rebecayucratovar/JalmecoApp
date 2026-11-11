@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { ZONA } from '@/lib/formato'
 import { useSesion } from '@/lib/sesion'
 
 export interface PuntoRecorrido {
@@ -28,17 +27,7 @@ export interface Recorrido {
   pausas: { nombre: string; inicio: string; fin: string }[]
 }
 
-/** Fecha de hoy en La Paz, "AAAA-MM-DD". */
-export function hoyLaPaz(ahora: Date = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: ZONA }).format(ahora)
-}
-
-/** "2026-11-11" + 1 → "2026-11-12". */
-export function sumarDias(fecha: string, dias: number): string {
-  const d = new Date(`${fecha}T12:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + dias)
-  return d.toISOString().slice(0, 10)
-}
+export { hoyLaPaz, sumarDias } from '@/lib/formato'
 
 export function useRecorrido(id: number, fecha: string) {
   const { api } = useSesion()

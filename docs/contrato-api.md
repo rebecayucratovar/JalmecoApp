@@ -244,21 +244,33 @@ Verificaciones de huella del día.
 ```
 
 ### GET /alertas
-Bandeja de alertas con filtros.
+Bandeja de alertas con filtros (por defecto, los últimos 7 días; máx. 500).
 ```
-GET /alertas?estado=nueva&tipo=sin_conexion&desde=…&hasta=…
-← { "alertas": [
-     { "id": 5, "tecnico": TecnicoResumen, "tipo": "sin_conexion",
-       "mensaje": "Sin señal desde hace 15 min · última ubicación Cota Cota",
-       "nivel": "advertencia", "creada_en": "…16:30…", "estado": "nueva" }, … ] }
+GET /alertas?estado=nueva&tipo=sin_conexion&tecnico=12&desde=AAAA-MM-DD&hasta=AAAA-MM-DD
+← { "desde": "2026-11-05", "hasta": "2026-11-11", "limitado": false,
+    "conteo": { "todas": 23, "nuevas": 10, "atendidas": 13 },   // sin aplicar `estado` (pestañas)
+    "alertas": [
+     { "id": 5, "tecnico": { "id": 12, "nombre": "…", "codigo": "JAL-1047", "cargo": "…",
+                             "celular_numero": "+591 …", "en_jornada": true },
+       "tipo": "sin_conexion", "mensaje": "Sin datos del celular desde las 16:15.",
+       "nivel": "advertencia", "creada_en": "…", "estado": "nueva",
+       "atendida_por": null, "atendida_en": null }, … ] }
 ```
+- Sin ubicación del técnico (el botón 📍 abre `/mapa?tecnico=12` si `en_jornada`).
 
 Tipos: `sin_conexion`, `bateria_baja`, `verificacion_no_realizada`, `cambio_equipo`,
 `seguimiento_detenido`. `sin_conexion` y `bateria_baja` las crea el worker (sin conexión: una por
 cada corte, sin contar el almuerzo; batería baja: una por jornada). En el MVP el aviso al admin es por **correo** (SMS/WhatsApp: Fase 2).
 
+### GET /alertas/resumen
+Para la campana y el menú (el panel lo consulta cada 30 s): todas las nuevas, de cualquier fecha.
+```
+← { "nuevas": 8, "criticas": 2, "ultimas": [ Alerta, … ] }   // las 5 más recientes
+```
+
 ### POST /alertas/{id}/atender  ·  POST /alertas/atender-todas
-Marca una (o todas) como atendidas.
+Marca una como atendida (← la alerta) o varias: `{ "ids": [1, 2] }`; sin `ids`, todas las nuevas
+(← `{ "atendidas": 2 }`). Guarda quién y cuándo.
 
 ### GET /config  ·  PUT /config
 Configuración: horario laboral, almuerzo, retención (meses), verificación (por día, límite min),
