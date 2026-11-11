@@ -63,7 +63,7 @@ export default function MapaPagina() {
         />
       </aside>
 
-      <div className="relative min-h-0 flex-1">
+      <div className="relative isolate min-h-0 flex-1">
         {/* El mapa muestra a quienes pasan el filtro (la búsqueda también filtra el mapa) */}
         <MapaLeaflet tecnicos={visibles} seleccionado={seleccionado} encuadre={encuadre} alSeleccionar={setSeleccionadoId} />
 

@@ -135,7 +135,7 @@ function Vista({ r, fecha }: { r: Recorrido; fecha: string }) {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
-      <div className="relative flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
+      <div className="relative isolate flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
         <div className="relative h-[420px] lg:h-[540px]">
           {r.puntos.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
