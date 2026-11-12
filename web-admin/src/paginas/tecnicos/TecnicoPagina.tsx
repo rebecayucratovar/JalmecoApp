@@ -69,7 +69,7 @@ function Ficha({ tecnico: t }: { tecnico: TecnicoAdmin }) {
   ].filter(Boolean)
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5 p-4 lg:p-6">
+    <div className="space-y-5 p-4 lg:p-6">
       <Link to="/tecnicos" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeftIcon className="size-4" /> Técnicos
       </Link>

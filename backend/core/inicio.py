@@ -52,22 +52,11 @@ class DashboardView(APIView):
         config = Configuracion.actual()
         activos = con_jornada(Tecnico.objects.filter(activo=True))
 
-        en_jornada = [t for t in activos.filter(en_jornada=True).order_by('nombre')]
+        en_jornada = list(activos.filter(en_jornada=True).values_list('estado_actual', flat=True))
         estados = {e: 0 for e in (Tecnico.Estado.EN_TRAYECTO, Tecnico.Estado.EN_PARADA, Tecnico.Estado.SIN_CONEXION)}
-        atencion = []
-        for t in en_jornada:
-            estado = t.estado_actual if t.estado_actual in estados else Tecnico.Estado.EN_PARADA
-            estados[estado] += 1
-            motivos = []
-            if estado == Tecnico.Estado.SIN_CONEXION:
-                motivos.append('sin_conexion')
-            if t.ultima_bateria is not None and t.ultima_bateria < config.bateria_baja_pct:
-                motivos.append('bateria_baja')
-            if motivos:
-                atencion.append({
-                    'id': t.id, 'nombre': t.nombre, 'codigo': t.codigo, 'motivos': motivos,
-                    'ultima_bateria': t.ultima_bateria, 'ultima_actualizacion': t.ultima_actualizacion,
-                })
+        for estado in en_jornada:
+            # Recién entrado y sin puntos todavía: cuenta como "en parada" (igual que el mapa)
+            estados[estado if estado in estados else Tecnico.Estado.EN_PARADA] += 1
 
         inicio_hoy = _inicio_dia(hoy)
         verif = Verificacion.objects.filter(solicitada_en__gte=inicio_hoy).aggregate(
@@ -94,6 +83,6 @@ class DashboardView(APIView):
             },
             'alertas': alertas,
             'verificaciones_hoy': verif,
-            'atencion': atencion,
+            'sin_conexion_min': config.sin_conexion_min,
             'horas_campo': horas_en_campo(hoy - timedelta(days=DIAS_GRAFICO - 1), hoy, ahora, franjas_activas()),
         })

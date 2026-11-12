@@ -14,7 +14,7 @@ import { Campo } from './Formulario'
 export function SeccionCuenta() {
   const { admin } = useSesion()
   return (
-    <div className="space-y-5">
+    <div className="grid items-start gap-5 xl:grid-cols-2">
       {/* La clave reinicia el formulario al cambiar los datos guardados */}
       <DatosCuenta key={`${admin?.nombre}|${admin?.email}`} nombre={admin?.nombre ?? ''} email={admin?.email ?? ''} />
       <CambioPassword />

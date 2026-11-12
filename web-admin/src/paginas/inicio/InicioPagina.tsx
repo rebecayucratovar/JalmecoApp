@@ -1,25 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
-import {
-  BatteryLowIcon,
-  BellIcon,
-  CheckCheckIcon,
-  ChevronRightIcon,
-  FingerprintIcon,
-  KeyRoundIcon,
-  Loader2Icon,
-  MapPinIcon,
-  TriangleAlertIcon,
-  WifiOffIcon,
-} from 'lucide-react'
+import { CheckCheckIcon, ChevronRightIcon, KeyRoundIcon, Loader2Icon, Maximize2Icon, TriangleAlertIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 
 import { Button } from '@/components/ui/button'
-import { ESTADOS } from '@/lib/estados'
-import { haceCuanto, hora, iniciales } from '@/lib/formato'
+import { infoTipo, useResumenAlertas } from '@/lib/alertas'
+import { ESTADOS, ORDEN_ESTADOS } from '@/lib/estados'
+import { fechaCorta, hora } from '@/lib/formato'
 import { useSesion } from '@/lib/sesion'
 import { useAhora } from '@/lib/useAhora'
 import { cn } from '@/lib/utils'
+import { useMapaEnVivo } from '@/paginas/mapa/datos'
+import { MapaLeaflet } from '@/paginas/mapa/MapaLeaflet'
 
 import { GraficoHoras } from './GraficoHoras'
 
@@ -36,20 +28,12 @@ export interface Dashboard {
   }
   alertas: { nuevas: number; criticas: number; hoy: number }
   verificaciones_hoy: { pedidas: number; exito: number; no_realizadas: number; pendientes: number }
-  atencion: {
-    id: number
-    nombre: string
-    codigo: string | null
-    motivos: ('sin_conexion' | 'bateria_baja')[]
-    ultima_bateria: number | null
-    ultima_actualizacion: string | null
-  }[]
+  sin_conexion_min: number
   horas_campo: { fecha: string; horas: number; personas: number }[]
 }
 
 export default function InicioPagina() {
   const { api } = useSesion()
-  const ahora = useAhora(30_000)
   const consulta = useQuery({
     queryKey: ['dashboard'],
     queryFn: ({ signal }) => api.get<Dashboard>('dashboard', signal),
@@ -73,187 +57,170 @@ export default function InicioPagina() {
     )
   }
 
-  const { personal: p, alertas, verificaciones_hoy: v, atencion, horas_campo } = consulta.data
+  const { personal: p, alertas, verificaciones_hoy: v } = consulta.data
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5 p-4 lg:p-6">
-      <p className="text-xs text-muted-foreground">
-        Personal en vivo · actualizado a las {hora(consulta.data.actualizado_en)} · se actualiza cada 30 s
-      </p>
+    <div className="space-y-5 p-4 lg:p-6">
+      {p.sin_pin > 0 && (
+        <Link
+          to="/tecnicos?vista=sin_pin"
+          className="flex items-center gap-3 rounded-xl border border-aviso/30 bg-aviso/10 px-4 py-3 text-sm outline-none hover:bg-aviso/15 focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <KeyRoundIcon className="size-4 shrink-0 text-aviso" aria-hidden />
+          <span className="flex-1">
+            <strong className="font-medium">{p.sin_pin} {p.sin_pin === 1 ? 'persona no tiene' : 'personas no tienen'} PIN</strong>
+            <span className="text-muted-foreground"> · todavía no pueden entrar a la app</span>
+          </span>
+          <span className="inline-flex items-center font-medium text-aviso">Generar PIN <ChevronRightIcon className="size-4" /></span>
+        </Link>
+      )}
 
-      {/* Personal ahora */}
-      <section aria-label="Personal ahora" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Indicador a="/mapa" etiqueta="En jornada" valor={p.en_jornada} detalle={`de ${p.activos} con la app`} destacado />
-        <Indicador a="/mapa" etiqueta={ESTADOS.en_trayecto.etiqueta} color={ESTADOS.en_trayecto.color} valor={p.en_trayecto} detalle="en movimiento" />
-        <Indicador a="/mapa" etiqueta={ESTADOS.en_parada.etiqueta} color={ESTADOS.en_parada.color} valor={p.en_parada} detalle="quietos en un lugar" />
-        <Indicador a="/mapa" etiqueta={ESTADOS.sin_conexion.etiqueta} color={ESTADOS.sin_conexion.color} valor={p.sin_conexion}
-          detalle="en jornada, sin datos" alerta={p.sin_conexion > 0} />
+      <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 2xl:grid-cols-6">
+        <Indicador a="/mapa" destacado etiqueta="En jornada"
+          valor={<>{p.en_jornada}<span className="ml-1.5 text-xl font-normal text-white/60 dark:text-muted-foreground">/ {p.activos}</span></>}
+          detalle={`${p.activos - p.en_jornada} fuera de jornada`} />
+        <Indicador a="/mapa" etiqueta={ESTADOS.en_trayecto.etiqueta} punto={ESTADOS.en_trayecto.color} valor={p.en_trayecto}
+          detalle="en movimiento" />
+        <Indicador a="/mapa" etiqueta={ESTADOS.en_parada.etiqueta} punto={ESTADOS.en_parada.color} valor={p.en_parada}
+          detalle="quietos en un lugar" />
+        <Indicador a="/mapa" etiqueta={ESTADOS.sin_conexion.etiqueta} punto={ESTADOS.sin_conexion.color} valor={p.sin_conexion}
+          detalle={`sin datos por más de ${consulta.data.sin_conexion_min} min`} tono={p.sin_conexion > 0 ? 'peligro' : undefined} />
+        <Indicador a="/alertas?tipo=verificacion_no_realizada&rango=hoy&estado=todas" etiqueta="Sin verificar" punto="#7c3aed"
+          valor={v.no_realizadas} tono={v.no_realizadas > 0 ? 'violeta' : undefined}
+          detalle={v.pedidas ? `huellas no realizadas hoy · ${v.exito} de ${v.pedidas} confirmadas` : 'aún no se pidieron huellas hoy'} />
+        <Indicador a="/alertas" etiqueta="Alertas activas" punto="var(--aviso)" valor={alertas.nuevas}
+          tono={alertas.nuevas > 0 ? 'aviso' : undefined}
+          detalle={alertas.criticas ? `${alertas.criticas} ${alertas.criticas === 1 ? 'crítica' : 'críticas'} · requieren atención` : 'requieren atención'} />
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Tarjeta titulo="Alertas sin atender" icono={BellIcon} a="/alertas" enlace="Ver bandeja">
-          <div className="flex items-baseline gap-2">
-            <span className={cn('text-3xl font-semibold tabular-nums', alertas.nuevas > 0 && 'text-aviso')}>{alertas.nuevas}</span>
-            <span className="text-sm text-muted-foreground">{alertas.nuevas === 1 ? 'nueva' : 'nuevas'}</span>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {alertas.criticas > 0 ? (
-              <span className="font-medium text-destructive">{alertas.criticas} {alertas.criticas === 1 ? 'crítica' : 'críticas'}</span>
-            ) : (
-              'Ninguna crítica'
-            )}
-            {' · '}
-            {alertas.hoy} {alertas.hoy === 1 ? 'generada' : 'generadas'} hoy
-          </p>
-        </Tarjeta>
-
-        <Tarjeta titulo="Verificaciones de huella hoy" icono={FingerprintIcon}>
-          <Verificaciones v={v} />
-        </Tarjeta>
-
-        <Tarjeta titulo="Personal" icono={KeyRoundIcon} a={p.sin_pin > 0 ? '/tecnicos?vista=sin_pin' : '/tecnicos'}
-          enlace={p.sin_pin > 0 ? 'Generar PIN' : 'Ver personal'}>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-semibold tabular-nums">{p.trabajaron_hoy}</span>
-            <span className="text-sm text-muted-foreground">{p.trabajaron_hoy === 1 ? 'persona marcó' : 'personas marcaron'} entrada hoy</span>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {p.sin_pin > 0 ? (
-              <span className="font-medium text-aviso">{p.sin_pin} sin PIN: aún no pueden entrar a la app</span>
-            ) : (
-              'Todos tienen PIN para la app'
-            )}
-          </p>
-        </Tarjeta>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.5fr)]">
+        <MapaMini enJornada={p.en_jornada} />
+        <UltimasAlertas />
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Tarjeta titulo="Necesitan atención" icono={TriangleAlertIcon} className="lg:col-span-1">
-          {atencion.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <CheckCheckIcon className="size-7 text-exito" />
-              <p className="text-sm text-muted-foreground">
-                {p.en_jornada ? 'Todo el personal en jornada está conectado y con batería.' : 'Nadie está en jornada ahora.'}
-              </p>
-            </div>
-          ) : (
-            <ul className="-mx-2 divide-y">
-              {atencion.map((t) => (
-                <li key={t.id}>
-                  <Link to={`/mapa?tecnico=${t.id}`} className="flex items-center gap-3 rounded-lg px-2 py-2.5 outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">{iniciales(t.nombre)}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">{t.nombre}</span>
-                      <span className="flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-                        {t.motivos.includes('sin_conexion') && (
-                          <span className="inline-flex items-center gap-1 text-destructive">
-                            <WifiOffIcon className="size-3.5" aria-hidden /> Sin conexión
-                            {t.ultima_actualizacion && ` · ${haceCuanto(t.ultima_actualizacion, ahora)}`}
-                          </span>
-                        )}
-                        {t.motivos.includes('bateria_baja') && (
-                          <span className="inline-flex items-center gap-1 text-aviso">
-                            <BatteryLowIcon className="size-3.5" aria-hidden /> Batería {t.ultima_bateria}%
-                          </span>
-                        )}
-                      </span>
-                    </span>
-                    <MapPinIcon className="size-4 shrink-0 text-muted-foreground" aria-label="Ver en el mapa" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Tarjeta>
-
-        <Tarjeta titulo="Horas en campo · últimos 7 días" className="lg:col-span-2">
-          <GraficoHoras dias={horas_campo} />
-        </Tarjeta>
-      </div>
+      <GraficoHoras dias={consulta.data.horas_campo} />
     </div>
   )
 }
 
-function Indicador({ a, etiqueta, valor, detalle, color, destacado, alerta }: {
+const TONOS = {
+  peligro: 'text-destructive',
+  aviso: 'text-aviso',
+  violeta: 'text-violet-600 dark:text-violet-400',
+}
+
+function Indicador({ a, etiqueta, valor, detalle, punto, destacado, tono }: {
   a: string
   etiqueta: string
-  valor: number
+  valor: ReactNode
   detalle: string
-  color?: string
+  punto?: string
   destacado?: boolean
-  alerta?: boolean
+  tono?: keyof typeof TONOS
 }) {
   return (
     <Link
       to={a}
       className={cn(
-        'group rounded-xl border bg-card p-4 outline-none transition-colors hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring',
-        destacado && 'border-transparent bg-marino text-white dark:bg-primary/15 dark:text-foreground',
-        alerta && 'border-destructive/40',
+        'flex min-h-36 flex-col rounded-xl border bg-card p-4 outline-none transition-colors hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring lg:p-5',
+        destacado && 'border-transparent bg-marino text-white hover:border-transparent hover:bg-marino/90 dark:bg-primary/15 dark:text-foreground',
       )}
     >
-      <p className={cn('flex items-center gap-2 text-sm font-medium', destacado ? 'text-white/80 dark:text-muted-foreground' : 'text-muted-foreground')}>
-        {color && <span className="size-2.5 rounded-full" style={{ background: color }} aria-hidden />}
+      <p className={cn('flex items-center gap-2 text-sm font-medium', destacado ? 'text-white/85 dark:text-muted-foreground' : 'text-muted-foreground')}>
+        {punto && <span className="size-2 rounded-full" style={{ background: punto }} aria-hidden />}
         {etiqueta}
       </p>
-      <p className={cn('mt-2 text-3xl font-semibold tabular-nums', alerta && 'text-destructive')}>{valor}</p>
-      <p className={cn('mt-0.5 text-xs', destacado ? 'text-white/70 dark:text-muted-foreground' : 'text-muted-foreground')}>{detalle}</p>
+      <p className={cn('mt-2 text-4xl font-semibold tracking-tight tabular-nums', tono && TONOS[tono])}>{valor}</p>
+      <p className={cn('mt-auto pt-3 text-xs leading-snug', destacado ? 'text-white/75 dark:text-muted-foreground' : 'text-muted-foreground')}>{detalle}</p>
     </Link>
   )
 }
 
-function Tarjeta({ titulo, icono: Icono, a, enlace, children, className }: {
-  titulo: string
-  icono?: typeof BellIcon
-  a?: string
-  enlace?: string
-  children: ReactNode
-  className?: string
-}) {
+function MapaMini({ enJornada }: { enJornada: number }) {
+  const navegar = useNavigate()
+  const mapa = useMapaEnVivo()
+  const tecnicos = mapa.data?.tecnicos ?? []
+
   return (
-    <section className={cn('flex flex-col rounded-xl border bg-card p-5', className)}>
-      <div className="mb-4 flex items-center gap-2">
-        {Icono && <Icono className="size-4 text-muted-foreground" aria-hidden />}
-        <h2 className="flex-1 text-sm font-semibold">{titulo}</h2>
-        {a && enlace && (
-          <Link to={a} className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline">
-            {enlace} <ChevronRightIcon className="size-3.5" aria-hidden />
-          </Link>
-        )}
+    <section className="flex min-w-0 flex-col overflow-hidden rounded-xl border bg-card">
+      <div className="flex items-center gap-2 border-b px-5 py-3.5">
+        <span className="size-2 rounded-full bg-exito" aria-hidden />
+        <h2 className="text-sm font-semibold">Mapa en vivo</h2>
+        <span className="truncate text-sm text-muted-foreground">· {enJornada} en jornada</span>
+        <Link to="/mapa" className="ml-auto inline-flex shrink-0 items-center gap-1.5 text-sm font-medium hover:underline">
+          <Maximize2Icon className="size-4" aria-hidden /> <span className="hidden sm:inline">Abrir mapa completo</span><span className="sm:hidden">Abrir</span>
+        </Link>
       </div>
-      <div className="flex-1">{children}</div>
+      {/* isolate: las capas de Leaflet no tapan menús ni diálogos */}
+      <div className="isolate h-[340px] sm:h-[420px] xl:h-[460px]">
+        <MapaLeaflet tecnicos={tecnicos} seleccionado={null} encuadre={0} alSeleccionar={(id) => navegar(`/mapa?tecnico=${id}`)} />
+      </div>
+      <ul className="flex flex-wrap gap-x-5 gap-y-1.5 border-t px-5 py-3 text-xs text-muted-foreground" aria-label="Leyenda">
+        {ORDEN_ESTADOS.map((e) => (
+          <li key={e} className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-full" style={{ background: ESTADOS[e].color }} aria-hidden /> {ESTADOS[e].etiqueta}
+          </li>
+        ))}
+      </ul>
     </section>
   )
 }
 
-function Verificaciones({ v }: { v: Dashboard['verificaciones_hoy'] }) {
-  if (v.pedidas === 0) {
-    return <p className="py-2 text-sm text-muted-foreground">Todavía no se pidió ninguna hoy. Se sortean durante la jornada.</p>
-  }
-  const partes = [
-    { clave: 'exito', etiqueta: 'Confirmadas', n: v.exito, clase: 'bg-exito' },
-    { clave: 'no', etiqueta: 'No realizadas', n: v.no_realizadas, clase: 'bg-destructive' },
-    { clave: 'pend', etiqueta: 'Esperando', n: v.pendientes, clase: 'bg-muted-foreground/40' },
-  ]
+function UltimasAlertas() {
+  const { data, isPending } = useResumenAlertas()
+  const ahora = useAhora(60_000)
+
   return (
-    <div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-semibold tabular-nums">{v.exito}</span>
-        <span className="text-sm text-muted-foreground">de {v.pedidas} confirmadas</span>
+    <section className="flex min-w-0 flex-col overflow-hidden rounded-xl border bg-card">
+      <div className="flex items-center border-b px-5 py-3.5">
+        <h2 className="flex-1 text-sm font-semibold">Alertas sin atender</h2>
+        <Link to="/alertas" className="text-sm font-medium hover:underline">Ver todas</Link>
       </div>
-      <div className="mt-3 flex h-2 gap-0.5 overflow-hidden rounded-full" aria-hidden>
-        {partes.filter((x) => x.n > 0).map((x) => (
-          <div key={x.clave} className={x.clase} style={{ flexGrow: x.n }} />
-        ))}
-      </div>
-      <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        {partes.map((x) => (
-          <li key={x.clave} className="flex items-center gap-1.5">
-            <span className={cn('size-2 rounded-full', x.clase)} aria-hidden />
-            {x.etiqueta} <span className="font-medium text-foreground tabular-nums">{x.n}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
+      {isPending ? (
+        <div className="flex flex-1 items-center justify-center p-10"><Loader2Icon className="size-5 animate-spin text-muted-foreground" /></div>
+      ) : !data || data.ultimas.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 p-10 text-center">
+          <CheckCheckIcon className="size-8 text-exito" />
+          <p className="text-sm text-muted-foreground">No hay alertas sin atender.</p>
+        </div>
+      ) : (
+        <ul className="divide-y">
+          {data.ultimas.map((a) => {
+            const tipo = infoTipo(a.tipo)
+            const Icono = tipo.icono
+            const cuando = fechaCorta(a.creada_en, ahora)
+            return (
+              <li key={a.id} className="flex items-center gap-3 px-5 py-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg"
+                  style={{ color: tipo.color, background: `color-mix(in srgb, ${tipo.color} 12%, transparent)` }}>
+                  <Icono className="size-4" aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1.5 text-sm font-medium">
+                    <span className="truncate">{a.tecnico.nombre}</span>
+                    {a.nivel === 'critico' && <span className="size-1.5 shrink-0 rounded-full bg-destructive" aria-label="Crítica" />}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">{a.mensaje ?? tipo.etiqueta}</span>
+                </span>
+                <time dateTime={a.creada_en} className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                  {cuando.startsWith('Hoy') ? hora(a.creada_en) : cuando}
+                </time>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to={a.tecnico.en_jornada ? `/mapa?tecnico=${a.tecnico.id}` : `/alertas?tecnico=${a.tecnico.id}&estado=todas`}
+                    aria-label={`Ver ${tipo.etiqueta.toLowerCase()} de ${a.tecnico.nombre}`}>
+                    Ver
+                  </Link>
+                </Button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+      {data && data.nuevas > data.ultimas.length && (
+        <Link to="/alertas" className="mt-auto border-t px-5 py-3 text-center text-xs font-medium text-muted-foreground hover:text-foreground">
+          y {data.nuevas - data.ultimas.length} más sin atender
+        </Link>
+      )}
+    </section>
   )
 }

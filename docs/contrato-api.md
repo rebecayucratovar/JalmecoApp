@@ -172,16 +172,15 @@ Todo el personal activo (el panel lo consulta cada ~10 s).
   actualizacion` (null): fuera de la jornada no se muestra dónde estuvo (privacidad).
 
 ### GET /dashboard
-Resumen de Inicio (el panel lo consulta cada 30 s).
+Resumen de Inicio (el panel lo consulta cada 30 s; las últimas alertas salen de `/alertas/resumen`
+y el mapa chico de `/mapa-en-vivo`).
 ```
 ← { "actualizado_en": "…",
     "personal": { "activos": 48, "en_jornada": 12, "en_trayecto": 7, "en_parada": 4,
                   "sin_conexion": 1, "trabajaron_hoy": 14, "sin_pin": 3 },
     "alertas": { "nuevas": 2, "criticas": 1, "hoy": 5 },
     "verificaciones_hoy": { "pedidas": 10, "exito": 8, "no_realizadas": 1, "pendientes": 1 },
-    "atencion": [ { "id": 7, "nombre": "…", "codigo": "JAL-1021",
-                    "motivos": ["sin_conexion", "bateria_baja"],
-                    "ultima_bateria": 9, "ultima_actualizacion": "…" } ],   // solo en jornada, sin coordenadas
+    "sin_conexion_min": 30,          // umbral de la alerta (para el texto de la tarjeta)
     "horas_campo": [ { "fecha": "2026-11-05", "horas": 80.5, "personas": 10 }, … ] }   // 7 días, sin almuerzo
 ```
 

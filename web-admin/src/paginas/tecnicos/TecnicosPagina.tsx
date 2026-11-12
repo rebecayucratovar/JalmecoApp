@@ -36,7 +36,7 @@ export default function TecnicosPagina() {
   const cuenta = contarVistas(todos)
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5 p-4 lg:p-6">
+    <div className="space-y-5 p-4 lg:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Personal con la app</h2>

@@ -27,6 +27,8 @@ export function SeccionHorario({ config }: Props) {
     >
       <BarraHorario inicio={inicio} fin={fin} almuerzo={almuerzo} />
 
+      <div className="grid gap-5 xl:grid-cols-2 xl:gap-8">
+      <div className="space-y-5">
       <fieldset className="grid gap-4 sm:grid-cols-2">
         <legend className="mb-3 text-sm font-medium">Horario laboral</legend>
         <CampoHora id="horario_inicio" etiqueta="Desde" valor={inicio} alCambiar={(v) => b.cambiar('horario_inicio', v)} error={b.errores.horario_inicio} />
@@ -36,6 +38,8 @@ export function SeccionHorario({ config }: Props) {
         Es informativo: la jornada real empieza y termina con la <strong className="font-medium text-foreground">entrada y salida
         marcadas en Odoo</strong>. Se usa para repartir las verificaciones por huella dentro del día.
       </Nota>
+      </div>
+      <div className="space-y-5">
 
       <fieldset className="grid gap-4 sm:grid-cols-2">
         <legend className="mb-3 text-sm font-medium">Almuerzo</legend>
@@ -47,6 +51,8 @@ export function SeccionHorario({ config }: Props) {
         Por privacidad, durante el almuerzo la app <strong className="font-medium text-foreground">no registra la ubicación</strong> y
         el servidor rechaza cualquier punto en esa franja. Tampoco se piden huellas ni cuenta para “Sin conexión”.
       </Nota>
+      </div>
+      </div>
     </Tarjeta>
   )
 }
@@ -101,6 +107,7 @@ export function SeccionHuella({ config }: Props) {
       descripcion="La app pide confirmar la identidad con la huella del celular en momentos al azar de la jornada."
       borrador={b}
     >
+      <div className="grid items-start gap-5 xl:grid-cols-2 xl:gap-8">
       <div className="grid gap-5 sm:grid-cols-2">
         <Campo id="verificaciones_por_dia" etiqueta="Verificaciones por día" error={b.errores.verificaciones_por_dia}
           ayuda="Por persona y por jornada. Siempre al menos 1.">
@@ -120,6 +127,7 @@ export function SeccionHuella({ config }: Props) {
         Los momentos se sortean dentro del horario laboral, separados al menos 60 minutos. Nunca durante el almuerzo
         ni en los primeros 10 minutos después de marcar la entrada.
       </Nota>
+      </div>
     </Tarjeta>
   )
 }
@@ -136,6 +144,7 @@ export function SeccionGps({ config }: Props) {
       borrador={b}
       pie="Los celulares toman el cambio al consultar su estado (en 1–2 min)."
     >
+      <div className="grid items-start gap-5 xl:grid-cols-2 xl:gap-8">
       <div className="grid gap-5 sm:grid-cols-2">
         <CampoNumero id="gps_distancia_m" etiqueta="En movimiento: un punto cada" unidad="metros" min={5} max={500}
           valor={metros} alCambiar={(v) => b.cambiar('gps_distancia_m', v)} error={b.errores.gps_distancia_m} />
@@ -147,6 +156,7 @@ export function SeccionGps({ config }: Props) {
         Valores más bajos dan un recorrido más detallado, pero gastan más batería y datos móviles. Con 25 m y 120 s
         (lo recomendado) el recorrido se ve bien sin agotar la batería en la jornada.
       </Nota>
+      </div>
     </Tarjeta>
   )
 }
@@ -160,6 +170,8 @@ export function SeccionAlertas({ config }: Props) {
 
   return (
     <Tarjeta titulo="Alertas" descripcion="Cuándo se crean las alertas automáticas y a quién se avisa por correo." borrador={b}>
+      <div className="grid items-start gap-5 xl:grid-cols-2 xl:gap-8">
+      <div className="space-y-5">
       <div className="grid gap-5 sm:grid-cols-2">
         <CampoNumero id="sin_conexion_min" etiqueta="“Sin conexión” después de" unidad="min" min={3} max={120}
           valor={b.borrador.sin_conexion_min} alCambiar={(v) => b.cambiar('sin_conexion_min', v)} error={b.errores.sin_conexion_min}
@@ -172,6 +184,8 @@ export function SeccionAlertas({ config }: Props) {
         30 minutos es lo recomendado para “Sin conexión”: dentro del ducto del ascensor el celular puede quedarse sin señal
         durante todo un mantenimiento. Con menos, llegarán alertas en trabajos normales.
       </Nota>
+      </div>
+      <div className="space-y-5">
 
       <Campo id="alertas_correos" etiqueta="Enviar las alertas por correo a" error={b.errores.alertas_correos}
         ayuda="Separados por coma o uno por línea. Vacío = a todos los administradores activos.">
@@ -206,6 +220,8 @@ export function SeccionAlertas({ config }: Props) {
           pero no se envían correos hasta completar los datos <code className="text-xs">EMAIL_*</code> en <code className="text-xs">backend/.env</code>.
         </Nota>
       )}
+      </div>
+      </div>
     </Tarjeta>
   )
 }
@@ -219,7 +235,7 @@ export function SeccionOdoo({ config }: Props) {
   const reduce = !Number.isNaN(b.borrador.retencion_meses) && b.borrador.retencion_meses < b.original.retencion_meses
 
   return (
-    <div className="space-y-5">
+    <div className="grid items-start gap-5 2xl:grid-cols-2">
       <EstadoOdoo />
       <Tarjeta titulo="Sincronización y datos guardados" borrador={b}>
         <div className="grid gap-5 sm:grid-cols-2">

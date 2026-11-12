@@ -253,7 +253,7 @@ class DashboardTest(TestCase):
         FranjaPausa.objects.all().delete()
         FranjaPausa.objects.create(nombre='Almuerzo', hora_inicio='12:00', hora_fin='13:00')
 
-    def test_resumen_y_atencion_sin_ubicacion(self):
+    def test_resumen_sin_ubicaciones(self):
         from django.utils import timezone
         ahora = timezone.now()
         juan = Tecnico.objects.create(usuario='juan', nombre='Juan', estado_actual='sin_conexion',
@@ -269,9 +269,8 @@ class DashboardTest(TestCase):
         p = r['personal']
         self.assertEqual((p['activos'], p['en_jornada'], p['en_trayecto'], p['sin_conexion'], p['sin_pin']), (3, 2, 1, 1, 3))
         self.assertEqual((r['alertas']['nuevas'], r['alertas']['criticas']), (1, 1))
-        self.assertEqual(len(r['atencion']), 1)
-        self.assertEqual(r['atencion'][0]['motivos'], ['sin_conexion', 'bateria_baja'])
-        self.assertNotIn('ultima_lat', r['atencion'][0])
+        self.assertEqual(r['sin_conexion_min'], 30)
+        self.assertNotIn('ultima_lat', str(r))  # el resumen no lleva ubicaciones
         self.assertEqual(len(r['horas_campo']), 7)
 
     def test_horas_en_campo_sin_almuerzo_y_cortadas_por_dia(self):

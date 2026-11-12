@@ -65,7 +65,7 @@ export default function AlertasPagina() {
   ]
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5 p-4 lg:p-6">
+    <div className="space-y-5 p-4 lg:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Bandeja de alertas</h2>

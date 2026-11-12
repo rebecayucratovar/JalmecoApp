@@ -44,7 +44,7 @@ export default function ConfiguracionPagina() {
   }, [actual])
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-5 p-4 lg:grid-cols-[230px_1fr] lg:gap-8 lg:p-6">
+    <div className="grid gap-5 p-4 lg:grid-cols-[240px_1fr] lg:gap-6 lg:p-6">
       <nav aria-label="Secciones de configuración" className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:overflow-visible lg:px-0">
         <ul ref={menu} className="flex gap-1 lg:sticky lg:top-6 lg:flex-col">
           {SECCIONES.map(({ id, titulo, icono: Icono }) => (
