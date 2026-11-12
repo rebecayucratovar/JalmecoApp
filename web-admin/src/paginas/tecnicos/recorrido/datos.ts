@@ -20,7 +20,7 @@ export interface Parada {
 
 export interface Recorrido {
   fecha: string
-  jornadas: { id: number; inicio: string; fin: string | null; estado: 'activa' | 'cerrada' }[]
+  jornadas: { id: number; inicio: string; fin: string | null; estado: 'activa' | 'cerrada'; cierre_automatico?: boolean }[]
   resumen: { en_jornada_min: number; en_paradas_min: number; paradas: number; distancia_km: number; puntos: number }
   puntos: PuntoRecorrido[]
   paradas: Parada[]

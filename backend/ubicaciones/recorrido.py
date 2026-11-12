@@ -158,7 +158,8 @@ def recorrido_del_dia(tecnico, fecha, ahora=None):
 
     return {
         'fecha': fecha,
-        'jornadas': [{'id': j.id, 'inicio': j.inicio, 'fin': j.fin, 'estado': j.estado} for j in jornadas],
+        'jornadas': [{'id': j.id, 'inicio': j.inicio, 'fin': j.fin, 'estado': j.estado,
+                      'cierre_automatico': j.cierre_automatico} for j in jornadas],
         'resumen': {
             'en_jornada_min': round(en_jornada.total_seconds() / 60),
             'en_paradas_min': round(en_paradas.total_seconds() / 60),

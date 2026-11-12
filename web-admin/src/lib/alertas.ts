@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   BatteryLowIcon,
+  DoorOpenIcon,
   FingerprintIcon,
   LocateOffIcon,
   SmartphoneIcon,
@@ -10,7 +11,7 @@ import {
 
 import { useSesion } from './sesion'
 
-export type TipoAlerta = 'sin_conexion' | 'bateria_baja' | 'verificacion_no_realizada' | 'cambio_equipo' | 'seguimiento_detenido'
+export type TipoAlerta = 'sin_conexion' | 'bateria_baja' | 'verificacion_no_realizada' | 'cambio_equipo' | 'seguimiento_detenido' | 'salida_no_marcada'
 
 export const TIPOS_ALERTA: Record<TipoAlerta, { etiqueta: string; icono: LucideIcon; color: string }> = {
   sin_conexion: { etiqueta: 'Sin conexión', icono: WifiOffIcon, color: '#dc2626' },
@@ -18,6 +19,7 @@ export const TIPOS_ALERTA: Record<TipoAlerta, { etiqueta: string; icono: LucideI
   verificacion_no_realizada: { etiqueta: 'Verificación no realizada', icono: FingerprintIcon, color: '#7c3aed' },
   cambio_equipo: { etiqueta: 'Cambio de equipo', icono: SmartphoneIcon, color: '#0185b6' },
   seguimiento_detenido: { etiqueta: 'Seguimiento detenido', icono: LocateOffIcon, color: '#dc2626' },
+  salida_no_marcada: { etiqueta: 'Salida no marcada', icono: DoorOpenIcon, color: '#b45309' },
 }
 
 export function infoTipo(tipo: string) {

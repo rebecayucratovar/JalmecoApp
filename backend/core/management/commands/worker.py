@@ -12,6 +12,7 @@ Tareas (cada una aislada: si una falla, se registra el error y las demás siguen
 - Alerta "Batería baja" ................................... cada 5 min
 - Correo al administrador con las alertas nuevas ......... cada 1 min
 - Retención: borrar datos de más de N meses ............... cada 24 h (y al arrancar)
+- Cierre de jornadas sin salida marcada (fin del horario + 2 h) cada 5 min
 - Odoo: asistencia → jornadas ............................. cada `odoo_sync_min` (1–2 min)
 - Odoo: datos del personal importado (nombre, cargo, baja) . cada 1 h
 (Las de Odoo no hacen nada mientras falten los datos de conexión en backend/.env.)
@@ -29,6 +30,7 @@ from alertas.correo import enviar_pendientes
 from alertas.servicios import revisar_bateria, revisar_sin_conexion
 from core.models import Configuracion
 from core.retencion import limpiar
+from jornadas.servicios import cerrar_olvidadas
 from odoo_sync import servicios as odoo
 from verificaciones import servicios as verificaciones
 
@@ -53,6 +55,7 @@ def _tareas():
         Tarea('batería baja', 300, revisar_bateria),
         Tarea('correo de alertas', 60, enviar_pendientes),
         Tarea('odoo: asistencia', 60, odoo.tarea_asistencia),
+        Tarea('salida no marcada', 300, cerrar_olvidadas),
         Tarea('odoo: personal', 3600, odoo.tarea_empleados),
         Tarea('retención', 24 * 3600, lambda: limpiar(Configuracion.actual().retencion_meses)),
     ]

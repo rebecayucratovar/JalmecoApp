@@ -9,6 +9,7 @@ class AlertaTipo(models.TextChoices):
     VERIFICACION_NO_REALIZADA = 'verificacion_no_realizada', 'Verificación no realizada'
     CAMBIO_EQUIPO = 'cambio_equipo', 'Cambio de equipo'
     SEGUIMIENTO_DETENIDO = 'seguimiento_detenido', 'Seguimiento detenido'
+    SALIDA_NO_MARCADA = 'salida_no_marcada', 'Salida no marcada'
 
 
 class AlertaNivel(models.TextChoices):
@@ -23,7 +24,8 @@ class AlertaEstado(models.TextChoices):
 
 
 class Alerta(models.Model):
-    """Alertas para el panel (sin conexión, batería baja, huella, cambio de equipo, seguimiento detenido)."""
+    """Alertas para el panel (sin conexión, batería baja, huella, cambio de equipo, seguimiento detenido,
+    salida no marcada)."""
 
     Tipo = AlertaTipo
     Nivel = AlertaNivel

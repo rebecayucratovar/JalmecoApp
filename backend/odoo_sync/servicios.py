@@ -308,6 +308,14 @@ def _aplicar_asistencia(a, tecnico_id, ahora):
         cambios.append('ubicacion_fin')
     if cambios:
         jornada.save(update_fields=cambios)
+    if jornada.cierre_automatico:
+        # La cerró el sistema (no marcó salida): no se reabre. Si después marca en Odoo una salida
+        # anterior a nuestro cierre, vale la de Odoo.
+        if fin and fin < jornada.fin:
+            jornada.fin = fin
+            jornada.save(update_fields=['fin'])
+            cambios.append('fin')
+        return bool(cambios)
     if jornada.fin != fin or jornada.estado != estado:
         if fin:
             _cerrar(jornada, fin)

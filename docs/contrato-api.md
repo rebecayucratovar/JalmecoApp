@@ -233,7 +233,8 @@ El recorrido de un día (por defecto hoy, hora de La Paz) — mapa, línea de ti
 ```
 ← {
     "fecha": "2026-11-11",
-    "jornadas": [ { "id": 6, "inicio": "…", "fin": "…" | null, "estado": "cerrada" }, … ],
+    "jornadas": [ { "id": 6, "inicio": "…", "fin": "…" | null, "estado": "cerrada",
+                    "cierre_automatico": false }, … ],   // true = no marcó salida
     "resumen": { "en_jornada_min": 482, "en_paradas_min": 95, "paradas": 2, "distancia_km": 14.8,
                  "puntos": 412 },
     "puntos":  [ { "lat": …, "lng": …, "hora": "…", "velocidad": 28.4, "bateria": 81 }, … ],
@@ -276,8 +277,9 @@ GET /alertas?estado=nueva&tipo=sin_conexion&tecnico=12&desde=AAAA-MM-DD&hasta=AA
 - Sin ubicación del técnico (el botón 📍 abre `/mapa?tecnico=12` si `en_jornada`).
 
 Tipos: `sin_conexion`, `bateria_baja`, `verificacion_no_realizada`, `cambio_equipo`,
-`seguimiento_detenido`. `sin_conexion` y `bateria_baja` las crea el worker (sin conexión: una por
-cada corte, sin contar el almuerzo; batería baja: una por jornada). En el MVP el aviso al admin es por **correo** (SMS/WhatsApp: Fase 2).
+`seguimiento_detenido`, `salida_no_marcada`. `sin_conexion`, `bateria_baja` y `salida_no_marcada`
+las crea el worker (sin conexión: una por cada corte, sin contar el almuerzo; batería baja: una por
+jornada; salida no marcada: al cerrar sola una jornada abierta pasado el fin del horario + 2 h). En el MVP el aviso al admin es por **correo** (SMS/WhatsApp: Fase 2).
 
 ### GET /alertas/resumen
 Para la campana y el menú (el panel lo consulta cada 30 s): todas las nuevas, de cualquier fecha.

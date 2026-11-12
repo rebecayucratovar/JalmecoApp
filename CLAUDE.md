@@ -69,7 +69,7 @@ Flutter NO va en Docker. Backend + DB sí (incluye las librerías de mapas GDAL/
 - **parada:** reservada (Fase 2: direcciones/zonas). Hoy las paradas se calculan al consultar el
   recorrido (`ubicaciones/recorrido.py`: ≤ 100 m durante ≥ 5 min; filtra lecturas falsas del GPS).
 - **alerta:** sin_conexion, bateria_baja, verificacion_no_realizada, cambio_equipo,
-  seguimiento_detenido. MVP: aviso al admin por correo (SMS/WhatsApp de pago → Fase 2).
+  seguimiento_detenido, salida_no_marcada. MVP: aviso al admin por correo (SMS/WhatsApp de pago → Fase 2).
 - **franja_pausa:** ventanas sin rastreo (fila inicial: Almuerzo 12:00–13:00).
 - **verificacion:** solicitudes de huella (tecnico, jornada, solicitada_en, respondida_en,
   resultado: exito / no_realizada, punto donde confirmó).
@@ -99,6 +99,10 @@ alerta; si luego llega otro `equipo_id` → alerta `cambio_equipo`. Sin IMEI (An
   jornada · No se registra tu ubicación". En jornada consulta cada 1 min y envía la cola cada 1 min.
 - **Seguimiento detenido:** si cierra sesión, quita el permiso o apaga el GPS en jornada, la
   app avisa (`mi/seguimiento-detenido`) → alerta al admin.
+- **Salida no marcada:** si la jornada sigue abierta al fin del horario + 2 h (o 4 h después de
+  una entrada fuera de horario), el worker la cierra (al fin del horario o al último punto GPS),
+  marca `cierre_automatico` y crea la alerta `salida_no_marcada`. La sincronización con Odoo no
+  la reabre; si luego marca en Odoo una salida anterior, vale la de Odoo.
 - **Almuerzo / privacidad:** entre 12:00 y 13:00 (hora America/La_Paz) la app NO recolecta ni
   guarda puntos, y el backend rechaza cualquier punto en esa franja.
 - **Huella:** la app pide confirmar identidad con la huella del celular en momentos aleatorios,

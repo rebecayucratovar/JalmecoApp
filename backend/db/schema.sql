@@ -106,7 +106,8 @@ CREATE TABLE alerta (
     tecnico_id    INT          NOT NULL REFERENCES tecnico(id) ON DELETE CASCADE,
     tipo          VARCHAR(30)  NOT NULL
                   CHECK (tipo IN ('sin_conexion','bateria_baja','verificacion_no_realizada',
-                                  'cambio_equipo','seguimiento_detenido')),
+                                  'cambio_equipo','seguimiento_detenido',
+                                  'salida_no_marcada')),
     mensaje       TEXT,
     nivel         VARCHAR(12)  NOT NULL DEFAULT 'advertencia'
                   CHECK (nivel IN ('info','advertencia','critico')),

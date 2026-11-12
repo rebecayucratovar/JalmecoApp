@@ -7,7 +7,7 @@ const MIN_TRAMO_MS = 60_000
 
 export type Evento =
   | { tipo: 'entrada'; hora: number }
-  | { tipo: 'salida'; hora: number }
+  | { tipo: 'salida'; hora: number; automatica?: boolean }
   | { tipo: 'en_curso'; hora: number }
   | { tipo: 'parada'; inicio: number; fin: number; numero: number; parada: Parada }
   | { tipo: 'trayecto'; inicio: number; fin: number; metros: number }
@@ -101,7 +101,7 @@ export function construirLinea(r: Recorrido, ahora: number = Date.now()): Evento
       cursor = Math.max(cursor, ev.fin)
     }
     hueco(cursor, fin)
-    eventos.push(j.fin ? { tipo: 'salida', hora: fin } : { tipo: 'en_curso', hora: fin })
+    eventos.push(j.fin ? { tipo: 'salida', hora: fin, automatica: j.cierre_automatico } : { tipo: 'en_curso', hora: fin })
   }
   return eventos
 }

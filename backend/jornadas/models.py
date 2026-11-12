@@ -22,6 +22,9 @@ class Jornada(models.Model):
     ubicacion_inicio = models.PointField(geography=True, srid=4326, null=True, blank=True, spatial_index=False)
     ubicacion_fin = models.PointField(geography=True, srid=4326, null=True, blank=True, spatial_index=False)
     estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.ACTIVA)
+    # La cerró el sistema porque no marcó salida en Odoo (jornadas/servicios.py). La sincronización
+    # no la reabre aunque en Odoo siga abierta.
+    cierre_automatico = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'jornada'

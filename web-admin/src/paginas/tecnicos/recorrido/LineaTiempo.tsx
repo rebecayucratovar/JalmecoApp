@@ -63,7 +63,12 @@ function Contenido({ evento: e }: { evento: Evento }) {
       return (
         <>
           <Icono className="bg-muted text-muted-foreground"><LogOutIcon className="size-4" /></Icono>
-          <span className="block pt-1.5 text-sm font-medium">Salida · {hora(new Date(e.hora))}</span>
+          <span className="min-w-0 pt-1.5">
+            <span className="block text-sm font-medium">Salida · {hora(new Date(e.hora))}</span>
+            {e.automatica && (
+              <span className="block text-xs text-aviso">No marcó salida en Odoo: la cerró el sistema</span>
+            )}
+          </span>
         </>
       )
     case 'en_curso':
