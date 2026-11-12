@@ -69,6 +69,14 @@ export function useProbarOdoo() {
   })
 }
 
+/** Envía un correo de prueba a quienes reciben las alertas. */
+export function useCorreoPrueba() {
+  const { api } = useSesion()
+  return useMutation({
+    mutationFn: () => api.post<{ ok: boolean; destinatarios?: string[]; mensaje?: string }>('alertas/correo-prueba'),
+  })
+}
+
 /** Trae ya la asistencia y los datos del personal (sin esperar al worker). */
 export function useSincronizarOdoo() {
   const { api } = useSesion()
@@ -86,7 +94,8 @@ export function useSincronizarOdoo() {
 export function useGuardarCuenta() {
   const { api } = useSesion()
   return useMutation({
-    mutationFn: (datos: Partial<Pick<Admin, 'nombre' | 'email'>>) => api.put<Admin>('mi-cuenta', datos),
+    mutationFn: (datos: Partial<Pick<Admin, 'nombre' | 'email'>> & { password_actual?: string }) =>
+      api.put<Admin>('mi-cuenta', datos),
     onSuccess: (admin) => api.actualizarSesion({ admin }),
   })
 }

@@ -15,10 +15,13 @@ from .serializers import AdministradorSerializer
 class CuentaSerializer(serializers.ModelSerializer):
     nombre = serializers.CharField(max_length=120)
     email = serializers.EmailField(max_length=160)
+    # El correo es el usuario del panel: cambiarlo pide la contraseña (si alguien encuentra la
+    # sesión abierta, no puede quedarse con la cuenta cambiando el correo)
+    password_actual = serializers.CharField(write_only=True, required=False, trim_whitespace=False)
 
     class Meta:
         model = Administrador
-        fields = ['nombre', 'email']
+        fields = ['nombre', 'email', 'password_actual']
 
     def validate_nombre(self, valor):
         valor = ' '.join(valor.split())
@@ -31,6 +34,15 @@ class CuentaSerializer(serializers.ModelSerializer):
         if Administrador.objects.filter(email__iexact=valor).exclude(pk=self.instance.pk).exists():
             raise serializers.ValidationError('Ya hay otro administrador con este correo.')
         return valor
+
+    def validate(self, datos):
+        clave = datos.pop('password_actual', None)
+        if 'email' in datos and datos['email'] != self.instance.email:
+            if not clave:
+                raise serializers.ValidationError({'password_actual': 'Para cambiar el correo, escribe tu contraseña.'})
+            if not self.instance.check_password(clave):
+                raise serializers.ValidationError({'password_actual': 'La contraseña no es correcta.'})
+        return datos
 
 
 class CambioPasswordSerializer(serializers.Serializer):
@@ -64,6 +76,10 @@ class MiCuentaView(APIView):
     """GET /mi-cuenta · PUT /mi-cuenta { nombre?, email? }"""
 
     permission_classes = [EsAdmin]
+
+    def get_throttles(self):
+        # El PUT puede verificar la contraseña: mismo límite de intentos que el cambio de contraseña
+        return [CambioPasswordThrottle()] if self.request.method == 'PUT' else []
 
     def get(self, request):
         return Response(AdministradorSerializer(request.user).data)

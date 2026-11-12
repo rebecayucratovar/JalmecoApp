@@ -36,6 +36,21 @@ def enviar_pendientes(ahora=None):
     return len(alertas)
 
 
+def enviar_prueba(admin):
+    """Correo de prueba a los destinatarios de las alertas. Devuelve la lista de destinatarios."""
+    destinatarios = Configuracion.actual().destinatarios_alertas()
+    cuerpo = [
+        'Este es un correo de prueba de Jalmeco GPS.',
+        '',
+        f'Lo pidió {admin.nombre} desde el panel ({timezone.localtime():%d/%m/%Y %H:%M}).',
+        'Si te llegó, las alertas también te van a llegar a este correo.',
+    ]
+    if settings.PANEL_URL:
+        cuerpo += ['', f'Panel: {settings.PANEL_URL.rstrip("/")}']
+    send_mail('Jalmeco GPS · Correo de prueba', '\n'.join(cuerpo), None, destinatarios)
+    return destinatarios
+
+
 def armar_correo(alertas):
     criticas = [a for a in alertas if a.nivel == Alerta.Nivel.CRITICO]
     if len(alertas) == 1:

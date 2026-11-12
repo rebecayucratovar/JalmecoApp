@@ -281,6 +281,13 @@ Tipos: `sin_conexion`, `bateria_baja`, `verificacion_no_realizada`, `cambio_equi
 las crea el worker (sin conexión: una por cada corte, sin contar el almuerzo; batería baja: una por
 jornada; salida no marcada: al cerrar sola una jornada abierta pasado el fin del horario + 2 h). En el MVP el aviso al admin es por **correo** (SMS/WhatsApp: Fase 2).
 
+### POST /alertas/correo-prueba
+Envía un correo de prueba a quienes reciben las alertas (máx. 5 por hora).
+```
+← { "ok": true, "destinatarios": ["carla@jalmeco.com.bo"] }
+← { "ok": false, "mensaje": "Falta configurar EMAIL_* en backend/.env." | "No se pudo enviar: …" }
+```
+
 ### GET /alertas/resumen
 Para la campana y el menú (el panel lo consulta cada 30 s): todas las nuevas, de cualquier fecha.
 ```
@@ -340,7 +347,8 @@ Trae ya la asistencia y los datos del personal importado (sin esperar al worker)
 
 ### GET /mi-cuenta  ·  PUT /mi-cuenta  ·  POST /mi-cuenta/password
 ```
-GET/PUT /mi-cuenta  → { nombre?, email? }   ← { "id": 1, "nombre": "…", "email": "…" }
+GET/PUT /mi-cuenta  → { nombre?, email?, password_actual? }   ← { "id": 1, "nombre": "…", "email": "…" }
+   (cambiar el email exige password_actual → 400 si falta o no es correcta; máx. 10 intentos por hora)
 POST /mi-cuenta/password  → { "actual": "…", "nueva": "…" }   ← { "access": "…", "refresh": "…" }
 ```
 - La nueva contraseña pasa los validadores de Django (8+ caracteres, no común, no solo números,

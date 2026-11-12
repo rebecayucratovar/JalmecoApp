@@ -53,15 +53,21 @@ function Bloque({ titulo, descripcion, error, children, pie, alEnviar }: {
 function DatosCuenta({ nombre: nombreInicial, email: emailInicial }: { nombre: string; email: string }) {
   const [nombre, setNombre] = useState(nombreInicial)
   const [email, setEmail] = useState(emailInicial)
+  const [clave, setClave] = useState('')
   const guardar = useGuardarCuenta()
   const errores = erroresPorCampo(guardar.error)
+  const cambiaCorreo = email.trim().toLowerCase() !== emailInicial
   const sucio = nombre !== nombreInicial || email !== emailInicial
 
   function enviar(e: FormEvent) {
     e.preventDefault()
     if (!sucio) return
     guardar.mutate(
-      { ...(nombre !== nombreInicial && { nombre }), ...(email !== emailInicial && { email }) },
+      {
+        ...(nombre !== nombreInicial && { nombre }),
+        ...(email !== emailInicial && { email }),
+        ...(cambiaCorreo && { password_actual: clave }),
+      },
       { onSuccess: () => toast.success('Datos actualizados') },
     )
   }
@@ -73,7 +79,7 @@ function DatosCuenta({ nombre: nombreInicial, email: emailInicial }: { nombre: s
       error={guardar.isError && Object.keys(errores).length === 0 ? guardar.error.message : null}
       alEnviar={enviar}
       pie={
-        <Button type="submit" disabled={!sucio || guardar.isPending}>
+        <Button type="submit" disabled={!sucio || (cambiaCorreo && !clave) || guardar.isPending}>
           {guardar.isPending && <Loader2Icon className="animate-spin" />} Guardar cambios
         </Button>
       }
@@ -86,6 +92,13 @@ function DatosCuenta({ nombre: nombreInicial, email: emailInicial }: { nombre: s
           <Input id="cuenta_email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" spellCheck={false} className="h-9" />
         </Campo>
       </div>
+      {cambiaCorreo && (
+        <Campo id="cuenta_password" etiqueta="Tu contraseña actual" error={errores.password_actual} className="sm:max-w-sm"
+          ayuda="Para cambiar el correo con el que entras al panel.">
+          <Input id="cuenta_password" type="password" value={clave} onChange={(e) => setClave(e.target.value)}
+            autoComplete="current-password" className="h-9" />
+        </Campo>
+      )}
     </Bloque>
   )
 }

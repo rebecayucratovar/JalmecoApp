@@ -1,7 +1,7 @@
 """Rutas de la API, montadas bajo /api/v1/ (ver docs/contrato-api.md)."""
 from django.urls import path
 
-from alertas.views import AlertasView, AtenderAlertaView, AtenderTodasView, ResumenAlertasView
+from alertas.views import AlertasView, AtenderAlertaView, AtenderTodasView, CorreoPruebaView, ResumenAlertasView
 from core.inicio import DashboardView
 from core.views import ConfiguracionView
 from jornadas.views import MiEstadoView
@@ -42,6 +42,7 @@ urlpatterns = [
     path('tecnicos/<int:pk>/recorrido', RecorridoView.as_view(), name='tecnico-recorrido'),
     path('alertas', AlertasView.as_view(), name='alertas'),
     path('alertas/resumen', ResumenAlertasView.as_view(), name='alertas-resumen'),
+    path('alertas/correo-prueba', CorreoPruebaView.as_view(), name='alertas-correo-prueba'),
     path('alertas/atender-todas', AtenderTodasView.as_view(), name='alertas-atender-todas'),
     path('alertas/<int:pk>/atender', AtenderAlertaView.as_view(), name='alerta-atender'),
     path('config', ConfiguracionView.as_view(), name='config'),

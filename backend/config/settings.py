@@ -117,6 +117,7 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'config.excepciones.manejador_excepciones',
     # Límite de intentos de login/refresh (el PIN es de solo 6 dígitos). Ver usuarios/throttles.py
     'DEFAULT_THROTTLE_RATES': {
+        'correo_prueba': '5/hour',
         'login_usuario': os.getenv('LOGIN_LIMITE_USUARIO', '10/hour'),
         'login_ip': os.getenv('LOGIN_LIMITE_IP', '60/min'),
         'cambio_password': '10/hour',

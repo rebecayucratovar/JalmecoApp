@@ -1,6 +1,7 @@
 """Bandeja de alertas del panel."""
 from datetime import datetime, time, timedelta
 
+from django.conf import settings
 from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -10,11 +11,32 @@ from rest_framework.views import APIView
 from jornadas.models import Jornada
 from usuarios.permisos import EsAdmin
 
+from .correo import enviar_prueba
 from .models import Alerta
 from .serializers import AlertaSerializer, FiltroAlertasSerializer
 
 DIAS_POR_DEFECTO = 7
 MAX_ALERTAS = 500
+
+
+class CorreoPruebaView(APIView):
+    """POST /alertas/correo-prueba → { ok, destinatarios } | { ok: false, mensaje }"""
+
+    permission_classes = [EsAdmin]
+    throttle_scope = 'correo_prueba'
+
+    def get_throttles(self):
+        from rest_framework.throttling import ScopedRateThrottle
+        return [ScopedRateThrottle()]
+
+    def post(self, request):
+        if not settings.EMAIL_HOST:
+            return Response({'ok': False, 'mensaje': 'Falta configurar EMAIL_* en backend/.env.'})
+        try:
+            destinatarios = enviar_prueba(request.user)
+        except Exception as e:  # SMTP: credenciales, red, puerto…
+            return Response({'ok': False, 'mensaje': f'No se pudo enviar: {e}'})
+        return Response({'ok': True, 'destinatarios': destinatarios})
 
 
 def _inicio_del_dia(fecha):

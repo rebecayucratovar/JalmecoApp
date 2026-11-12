@@ -134,10 +134,17 @@ class MiCuentaTest(TestCase):
 
     def test_lee_y_edita_datos(self):
         self.assertEqual(self.client.get('/api/v1/mi-cuenta', **self.auth).json()['email'], 'ana@jalmeco.com')
-        r = self.client.put('/api/v1/mi-cuenta', {'nombre': '  Ana  María ', 'email': 'ANA.M@jalmeco.com'},
-                            content_type='application/json', **self.auth)
+        def put(datos):
+            return self.client.put('/api/v1/mi-cuenta', datos, content_type='application/json', **self.auth)
+
+        # El nombre se cambia sin contraseña; el correo, no
+        self.assertEqual(put({'nombre': '  Ana  María '}).json()['nombre'], 'Ana María')
+        self.assertEqual(set(put({'email': 'ana.m@jalmeco.com'}).json()['detalle']), {'password_actual'})
+        self.assertEqual(set(put({'email': 'ana.m@jalmeco.com', 'password_actual': 'mala'}).json()['detalle']),
+                         {'password_actual'})
+        r = put({'email': 'ANA.M@jalmeco.com', 'password_actual': 'ClaveVieja2026'})
         self.assertEqual(r.json(), {'id': self.admin.pk, 'nombre': 'Ana María', 'email': 'ana.m@jalmeco.com'})
-        r = self.client.put('/api/v1/mi-cuenta', {'email': 'otro@jalmeco.com'}, content_type='application/json', **self.auth)
+        r = put({'email': 'otro@jalmeco.com', 'password_actual': 'ClaveVieja2026'})
         self.assertEqual(set(r.json()['detalle']), {'email'})
 
     def test_cambio_de_password(self):

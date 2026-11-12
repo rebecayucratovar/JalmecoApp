@@ -6,7 +6,7 @@ import { fechaCorta, haceCuanto } from '@/lib/formato'
 import { useAhora } from '@/lib/useAhora'
 import { cn } from '@/lib/utils'
 
-import { listaCorreos, useEstadoOdoo, useProbarOdoo, useSincronizarOdoo, type Configuracion } from './datos'
+import { listaCorreos, useCorreoPrueba, useEstadoOdoo, useProbarOdoo, useSincronizarOdoo, type Configuracion } from './datos'
 import { useBorrador } from './borrador'
 import { Campo, CampoHora, CampoNumero, Nota, Tarjeta } from './Formulario'
 
@@ -167,6 +167,7 @@ export function SeccionAlertas({ config }: Props) {
   const b = useBorrador(config, ['sin_conexion_min', 'bateria_baja_pct', 'alertas_correos'] as const)
   const escritos = listaCorreos(b.borrador.alertas_correos)
   const destinatarios = b.sucio ? (escritos.length ? escritos : null) : config.alertas_destinatarios
+  const prueba = useCorreoPrueba()
 
   return (
     <Tarjeta titulo="Alertas" descripcion="Cuándo se crean las alertas automáticas y a quién se avisa por correo." borrador={b}>
@@ -214,6 +215,21 @@ export function SeccionAlertas({ config }: Props) {
           <p className="text-xs">Todos los administradores activos.</p>
         )}
       </div>
+      {config.correo_activo && (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="button" variant="outline" onClick={() => prueba.mutate()} disabled={prueba.isPending || b.sucio}>
+            {prueba.isPending ? <Loader2Icon className="animate-spin" /> : <MailIcon />} Enviar correo de prueba
+          </Button>
+          {b.sucio && !prueba.data && <span className="text-xs text-muted-foreground">Guarda los cambios primero.</span>}
+          {prueba.data && (
+            <p className={cn('flex items-center gap-1.5 text-sm', prueba.data.ok ? 'text-exito' : 'text-destructive')} role="status">
+              {prueba.data.ok ? <CheckCircle2Icon className="size-4 shrink-0" /> : <XCircleIcon className="size-4 shrink-0" />}
+              {prueba.data.ok ? `Enviado a ${prueba.data.destinatarios?.join(', ')}. Revisa también Spam.` : prueba.data.mensaje}
+            </p>
+          )}
+          {prueba.isError && <p className="text-sm text-destructive">{prueba.error.message}</p>}
+        </div>
+      )}
       {!config.correo_activo && (
         <Nota tono="aviso">
           <strong className="font-medium">El servidor de correo aún no está configurado.</strong> Las alertas se ven en el panel,
