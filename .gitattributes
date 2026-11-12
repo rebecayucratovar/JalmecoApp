@@ -1,0 +1,6 @@
+# Archivos que corren en Linux (VPS, Docker, GitHub Actions): siempre con fin de línea LF,
+# aunque se editen en Windows (con CRLF, bash falla con "$'\r': command not found").
+*.sh            text eol=lf
+Caddyfile       text eol=lf
+*.yml           text eol=lf
+Dockerfile      text eol=lf
