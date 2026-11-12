@@ -55,6 +55,7 @@ function Contenido({ tecnico, alCerrar, alGuardar }: { tecnico?: TecnicoAdmin; a
   const guardar = useGuardarTecnico(tecnico?.id)
   const [campos, setCampos] = useState<Campos>(() => inicial(tecnico))
   const deOdoo = tecnico?.odoo_employee_id != null
+  const usuarioDeOdoo = tecnico?.usuario_de_odoo ?? false
   const errores = erroresPorCampo(guardar.error)
   const errorGeneral = guardar.isError && Object.keys(errores).length === 0 ? guardar.error.message : null
 
@@ -83,13 +84,13 @@ function Contenido({ tecnico, alCerrar, alGuardar }: { tecnico?: TecnicoAdmin; a
         <DialogDescription>
           {tecnico
             ? tecnico.nombre
-            : 'Para quien aún no está en Odoo. Después de crearlo, genera su PIN para que pueda entrar a la app.'}
+            : 'Para quien no está en Odoo (si está, mejor «Importar de Odoo»). Después de crearlo, genera su PIN para que pueda entrar a la app.'}
         </DialogDescription>
       </DialogHeader>
 
       {deOdoo && (
         <p className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-          Nombre, código, cargo y usuario vienen de Odoo: se cambian allá.
+          {usuarioDeOdoo ? 'Nombre, cargo y usuario vienen de Odoo' : 'Nombre y cargo vienen de Odoo'}: se cambian allá.
         </p>
       )}
       {errorGeneral && (
@@ -105,10 +106,10 @@ function Contenido({ tecnico, alCerrar, alGuardar }: { tecnico?: TecnicoAdmin; a
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Campo id="codigo" etiqueta="Código" ayuda="JAL-XXXX" error={errores.codigo}>
-          <Input id="codigo" value={campos.codigo ?? ''} onChange={(e) => cambiar('codigo')(e.target.value.toUpperCase())} placeholder="JAL-1021" disabled={deOdoo} className="font-mono" />
+          <Input id="codigo" value={campos.codigo ?? ''} onChange={(e) => cambiar('codigo')(e.target.value.toUpperCase())} placeholder="JAL-1021" className="font-mono" />
         </Campo>
-        <Campo id="usuario" etiqueta="Usuario de la app" ayuda="Vacío = el código" error={errores.usuario}>
-          <Input id="usuario" value={campos.usuario} onChange={(e) => cambiar('usuario')(e.target.value)} disabled={deOdoo} autoCapitalize="none" spellCheck={false} />
+        <Campo id="usuario" etiqueta="Usuario de la app" ayuda={usuarioDeOdoo ? 'Su usuario de Odoo' : 'Vacío = el código'} error={errores.usuario}>
+          <Input id="usuario" value={campos.usuario} onChange={(e) => cambiar('usuario')(e.target.value)} disabled={usuarioDeOdoo} autoCapitalize="none" spellCheck={false} />
         </Campo>
       </div>
 

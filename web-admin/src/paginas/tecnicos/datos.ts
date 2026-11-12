@@ -21,6 +21,8 @@ export interface TecnicoAdmin {
   celular_numero: string | null
   jornada_inicio: string | null
   usuario: string
+  /** El usuario es el de Odoo (se cambia allá). Si no, es generado y se puede cambiar aquí. */
+  usuario_de_odoo: boolean
   activo: boolean
   tiene_pin: boolean
   pin_generado_en: string | null
@@ -119,4 +121,28 @@ export function filtrarTecnicos(tecnicos: TecnicoAdmin[], vista: Vista, estado: 
     const texto = normalizar(`${t.nombre} ${t.codigo ?? ''} ${t.usuario} ${t.cargo ?? ''} ${t.celular_modelo ?? ''}`)
     return texto.includes(q) || (qDigitos.length >= 3 && (t.celular_numero ?? '').replace(/\D/g, '').includes(qDigitos))
   })
+}
+
+// ---------- Importar de Odoo ----------
+
+export interface EmpleadoOdoo {
+  odoo_id: number
+  nombre: string
+  cargo: string | null
+  departamento: string | null
+  empresa: string | null
+  usuario_odoo: string | null
+  /** Ya está en Jalmeco GPS. */
+  tecnico_id: number | null
+}
+
+/** Valor de los filtros para «todas las empresas / todos los departamentos». */
+export const TODOS = '__todos'
+
+export function filtrarEmpleados(empleados: EmpleadoOdoo[], busqueda: string, empresa: string, departamento: string) {
+  const q = normalizar(busqueda)
+  return empleados.filter((e) =>
+    (empresa === TODOS || e.empresa === empresa)
+    && (departamento === TODOS || e.departamento === departamento)
+    && (!q || normalizar(`${e.nombre} ${e.cargo ?? ''}`).includes(q)))
 }

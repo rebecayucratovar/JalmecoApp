@@ -71,8 +71,10 @@ class Tecnico(models.Model):
     equipo_id = models.CharField(max_length=64, null=True, blank=True)
     equipo_modelo = models.CharField(max_length=80, null=True, blank=True)  # ej. "samsung SM-A155F"
     equipo_registrado_en = models.DateTimeField(null=True, blank=True)
-    # Login: usuario de Odoo; si la persona no tiene, el usuario es su código JAL-XXXX
-    usuario = models.CharField(max_length=40, unique=True)
+    # Login: el usuario de Odoo (su correo); si no tiene, uno generado (nombre.apellido) o su
+    # código JAL-XXXX. `usuario_de_odoo` = vino de Odoo: se cambia allá, no en el panel.
+    usuario = models.CharField(max_length=120, unique=True)
+    usuario_de_odoo = models.BooleanField(default=False)
     pin_hash = models.CharField(max_length=255, null=True, blank=True)  # NULL = "Sin PIN"
     pin_generado_en = models.DateTimeField(null=True, blank=True)
     activo = models.BooleanField(default=True)

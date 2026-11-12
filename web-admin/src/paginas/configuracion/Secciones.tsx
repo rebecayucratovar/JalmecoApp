@@ -1,4 +1,4 @@
-import { CheckCircle2Icon, Loader2Icon, MailIcon, PlugIcon, TriangleAlertIcon, XCircleIcon } from 'lucide-react'
+import { CheckCircle2Icon, Loader2Icon, MailIcon, PlugIcon, RefreshCwIcon, TriangleAlertIcon, XCircleIcon } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -6,7 +6,7 @@ import { fechaCorta, haceCuanto } from '@/lib/formato'
 import { useAhora } from '@/lib/useAhora'
 import { cn } from '@/lib/utils'
 
-import { listaCorreos, useEstadoOdoo, useProbarOdoo, type Configuracion } from './datos'
+import { listaCorreos, useEstadoOdoo, useProbarOdoo, useSincronizarOdoo, type Configuracion } from './datos'
 import { useBorrador } from './borrador'
 import { Campo, CampoHora, CampoNumero, Nota, Tarjeta } from './Formulario'
 
@@ -267,7 +267,9 @@ export function SeccionOdoo({ config }: Props) {
 function EstadoOdoo() {
   const consulta = useEstadoOdoo()
   const probar = useProbarOdoo()
+  const sincronizar = useSincronizarOdoo()
   const ahora = useAhora(30_000)
+  const s = sincronizar.data
   const e = consulta.data
 
   return (
@@ -315,6 +317,29 @@ function EstadoOdoo() {
             )}
             {probar.isError && <p className="text-sm text-destructive">{probar.error.message}</p>}
           </div>
+
+          {e!.faltan.length === 0 && (
+            <div className="flex flex-wrap items-center gap-3">
+              <Button variant="outline" onClick={() => sincronizar.mutate()} disabled={sincronizar.isPending}>
+                <RefreshCwIcon className={cn(sincronizar.isPending && 'animate-spin')} /> Sincronizar ahora
+              </Button>
+              {s && (
+                <p className={cn('flex items-center gap-1.5 text-sm', s.ok ? 'text-exito' : 'text-destructive')} role="status">
+                  {s.ok ? <CheckCircle2Icon className="size-4 shrink-0" /> : <XCircleIcon className="size-4 shrink-0" />}
+                  {s.ok
+                    ? s.jornadas || s.empleados
+                      ? `Listo: ${s.jornadas} ${s.jornadas === 1 ? 'jornada actualizada' : 'jornadas actualizadas'}, ${s.empleados} ${s.empleados === 1 ? 'persona' : 'personas'} con datos nuevos.`
+                      : 'Listo: todo estaba al día.'
+                    : s.mensaje}
+                </p>
+              )}
+              {sincronizar.isError && <p className="text-sm text-destructive">{sincronizar.error.message}</p>}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Sin tocar nada, la asistencia se lee según «Leer la asistencia de Odoo cada» y los datos del personal
+            (nombre, cargo, bajas) cada hora. Para traer personal nuevo: Técnicos → «Importar de Odoo».
+          </p>
 
           {e!.historial.length > 0 && (
             <div>

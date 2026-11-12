@@ -1,12 +1,13 @@
 """Estado de la integración con Odoo (pantalla Configuración → Integración Odoo)."""
 from django.conf import settings
-from rest_framework import serializers
+from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.models import Configuracion
 from usuarios.permisos import EsAdmin
 
+from . import servicios
 from .cliente import ClienteOdoo, ErrorOdoo
 from .models import SincronizacionOdoo
 
@@ -53,3 +54,62 @@ class OdooProbarView(APIView):
         except ErrorOdoo as e:
             return Response({'ok': False, 'mensaje': str(e)})
         return Response({'ok': True, 'version': version, 'mensaje': f'Conectado como {odoo.usuario}.'})
+
+
+def _respuesta_error(e):
+    return Response({'error': str(e), 'codigo': 'ODOO_ERROR'}, status=status.HTTP_502_BAD_GATEWAY)
+
+
+class OdooEmpleadosView(APIView):
+    """GET /odoo/empleados — empleados activos de Odoo, para elegir a quién importar."""
+
+    permission_classes = [EsAdmin]
+
+    def get(self, request):
+        try:
+            empleados = servicios.empleados_odoo(ClienteOdoo())
+        except ErrorOdoo as e:
+            return _respuesta_error(e)
+        return Response({'empleados': empleados})
+
+
+class ImportarSerializer(serializers.Serializer):
+    odoo_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), min_length=1, max_length=300)
+
+
+class ImportarOdooView(APIView):
+    """
+    POST /tecnicos/importar-odoo { odoo_ids } — crea (o pone al día) a esas personas y trae sus
+    asistencias recientes, para que quien ya marcó entrada aparezca en jornada.
+    """
+
+    permission_classes = [EsAdmin]
+
+    def post(self, request):
+        datos = ImportarSerializer(data=request.data)
+        datos.is_valid(raise_exception=True)
+        try:
+            odoo = ClienteOdoo()
+            resultado = servicios.importar(odoo, datos.validated_data['odoo_ids'])
+            SincronizacionOdoo.registrar(SincronizacionOdoo.Tipo.EMPLEADOS,
+                                         registros=resultado['importados'] + resultado['vinculados'])
+            servicios.tarea_asistencia_ahora(odoo)
+        except ErrorOdoo as e:
+            return _respuesta_error(e)
+        return Response(resultado)
+
+
+class OdooSincronizarView(APIView):
+    """POST /odoo/sincronizar — trae ya la asistencia y los datos del personal (sin esperar al worker)."""
+
+    permission_classes = [EsAdmin]
+
+    def post(self, request):
+        try:
+            odoo = ClienteOdoo(timeout=20)
+            empleados = servicios.actualizar_empleados(odoo)
+            SincronizacionOdoo.registrar(SincronizacionOdoo.Tipo.EMPLEADOS, registros=empleados)
+            jornadas = servicios.tarea_asistencia_ahora(odoo)
+        except ErrorOdoo as e:
+            return Response({'ok': False, 'mensaje': str(e)})
+        return Response({'ok': True, 'jornadas': jornadas, 'empleados': empleados})

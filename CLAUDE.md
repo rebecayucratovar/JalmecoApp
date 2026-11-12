@@ -56,7 +56,9 @@ Flutter NO va en Docker. Backend + DB sí (incluye las librerías de mapas GDAL/
 - **administrador:** login del panel (email + password_hash). Cambiar la contraseña
   (`password_cambiado_en`) cierra las demás sesiones (mismo mecanismo que el PIN).
 - **tecnico:** login de la app (usuario + pin_hash). Vinculado a Odoo por `odoo_employee_id`.
-  El usuario es el de Odoo; si no tiene, su código JAL-XXXX (el login acepta ambos).
+  El usuario es el de Odoo (su correo, `usuario_de_odoo` = se cambia allá); si no tiene, uno
+  generado `nombre.apellido` (editable en el panel). También entra con su código JAL-XXXX si se
+  le cargó (Odoo no lo tiene; el código es opcional).
   `pin_hash` NULL = "Sin PIN"; `pin_generado_en`. El PIN lo genera el admin (se muestra una sola
   vez); reiniciarlo revoca las sesiones abiertas (tokens con `iat` anterior → 401 SESION_REVOCADA). Campos de último estado denormalizados
   (estado_actual, ultima_lat/lng, ultima_bateria, ultima_velocidad, ultima_actualizacion)
@@ -111,16 +113,28 @@ alerta; si luego llega otro `equipo_id` → alerta `cambio_equipo`. Sin IMEI (An
   almuerzo no cuenta; 30 min por defecto porque en el ducto del ascensor se pierde la señal hasta
   ~30 min); cada 5 min "Batería baja" (`bateria_baja_pct`, 1 por jornada); cada 1 min un correo
   con las alertas nuevas a `alertas_correos` (vacío = admins activos; SMTP en `.env`); cada 24 h
-  la retención. Pendiente: sincronización con Odoo. La configuración se edita en el panel
+  la retención; Odoo: asistencia cada `odoo_sync_min` y datos del personal cada 1 h (sin
+  credenciales en `.env` no hace nada). La configuración se edita en el panel
   (Configuración); el admin de Django (/admin) queda como respaldo.
 - **Retención:** borrar ubicaciones/recorridos más viejos que **12 meses** (configurable).
   El mismo valor se muestra en la app y en el admin. La asistencia vive en Odoo y no se toca.
 
 ## Integración con Odoo
 
-- Leer `hr.attendance` para abrir/cerrar jornadas (entrada/salida); `hr.employee` para
-  importar personal y su **cargo** (job position de Odoo). El worker lee la asistencia cada
-  **1–2 min** como máximo (`odoo_sync_min`).
+- Solo LECTURA de Odoo (`odoo_sync/servicios.py`). Leer `hr.attendance` para abrir/cerrar jornadas
+  (entrada/salida); `hr.employee` para importar personal y su **cargo** (job position de Odoo). El
+  worker lee la asistencia cada **1–2 min** como máximo (`odoo_sync_min`).
+- **Importar personal:** lo elige el admin (Técnicos → "Importar de Odoo"), porque Odoo tiene 134
+  empleados activos de 3 empresas (MI EMPRESA, TEKNOLIFT SRL, JALMECO LTDA) y ex empleados sin
+  archivar. Nombre = `name` + `apellido_paterno` + `apellido_materno` (campos del partner: `name`
+  trae solo los nombres). Si alguien ya estaba cargado a mano con el mismo nombre, se vincula.
+  Cada hora se ponen al día nombre/cargo/usuario y, si se archiva en Odoo, se desactiva aquí.
+- **Asistencia → jornada:** las abiertas + las de los últimos 2 días + las modificadas desde la
+  última sincronización. Solo CREA jornadas de los últimos 2 días (no trae historial viejo).
+  Se ignoran: marcaciones de segundos (< 1 min, por error), entradas con fecha futura y empleados
+  no importados. Si borran la asistencia en Odoo, la jornada se borra (si está vacía) o se cierra.
+  Al entrar se limpia la última posición (el mapa no muestra la de ayer). La asistencia trae la
+  ubicación de entrada/salida (`in_latitude`…) → `ubicacion_inicio/fin`.
 - **Espejo a Odoo (pedido de gerencia):** subir la última ubicación de cada persona a un campo
   del empleado cada ~8 min, para consultarla en Odoo. El detalle completo queda en el panel
   propio (con enlace). Solo resumen liviano, para no sobrecargar Odoo.
@@ -153,10 +167,10 @@ cd mobile && flutter run
 
 - Confirmar que se instala la app en los celulares de **todo el personal** de La Paz
   (cualquiera puede salir en jornada). Santa Cruz entra con multi-sucursal (Fase 2).
-- Confirmar si en Odoo los empleados ya tienen el cargo cargado.
 - Teléfono del único trabajador con iPhone (recomendado: darle un Android).
 
-Resuelto: retención = 12 meses. Nombre: Jalmeco GPS. Login: usuario de Odoo o código JAL.
+Resuelto: retención = 12 meses. Nombre: Jalmeco GPS. Login: usuario de Odoo o generado
+(nombre.apellido); el código JAL no está en Odoo. Cargo: casi todos lo tienen en Odoo (job_id).
 Celular: asignado (admin + Excel) y detectado (app). Sin IMEI ni celular del administrador.
 
 ## Reparto del equipo (3 personas)

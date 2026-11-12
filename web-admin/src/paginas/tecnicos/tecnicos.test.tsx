@@ -7,7 +7,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { Api, ApiError } from '@/lib/api'
 import { AlmacenObservable, ProveedorSesion } from '@/lib/sesion'
 
-import { erroresPorCampo, filtrarTecnicos, formatoCelular, type TecnicoAdmin } from './datos'
+import { erroresPorCampo, filtrarEmpleados, filtrarTecnicos, formatoCelular, type TecnicoAdmin } from './datos'
+import { DialogoImportarOdoo } from './DialogoImportarOdoo'
 import { DialogoPin } from './DialogoPin'
 import { FormularioTecnico } from './FormularioTecnico'
 
@@ -18,7 +19,7 @@ function tec(extra: Partial<TecnicoAdmin> = {}): TecnicoAdmin {
   return {
     id: 7, codigo: 'JAL-1021', nombre: 'Juan Mamani', cargo: 'Técnico', foto_url: null, estado_actual: 'fuera_jornada',
     ultima_lat: null, ultima_lng: null, ultima_bateria: null, ultima_velocidad: null, ultima_actualizacion: null,
-    celular_modelo: 'Samsung A15', celular_numero: '+591 71245830', jornada_inicio: null, usuario: 'jmamani',
+    celular_modelo: 'Samsung A15', celular_numero: '+591 71245830', jornada_inicio: null, usuario: 'jmamani', usuario_de_odoo: false,
     activo: true, tiene_pin: false, pin_generado_en: null, equipo_modelo: null, equipo_registrado_en: null,
     odoo_employee_id: null, creado_en: '2026-11-01T12:00:00Z', ...extra,
   }
@@ -96,11 +97,15 @@ describe('FormularioTecnico', () => {
     expect(f.mock.calls[0][0]).toBe('/api/v1/tecnicos/7')
   })
 
-  it('si viene de Odoo, nombre y código no se editan', () => {
-    render(<Proveedores f={vi.fn()}><FormularioTecnico tecnico={tec({ odoo_employee_id: 55 })} abierto alCambiar={vi.fn()} /></Proveedores>)
+  it('si viene de Odoo, nombre y cargo no se editan (el usuario, solo si es el de Odoo)', () => {
+    const { unmount } = render(<Proveedores f={vi.fn()}><FormularioTecnico tecnico={tec({ odoo_employee_id: 55 })} abierto alCambiar={vi.fn()} /></Proveedores>)
     expect(screen.getByLabelText('Nombre completo')).toBeDisabled()
-    expect(screen.getByLabelText('Código')).toBeDisabled()
-    expect(screen.getByLabelText('Modelo')).toBeEnabled()
+    expect(screen.getByLabelText('Cargo')).toBeDisabled()
+    expect(screen.getByLabelText('Código')).toBeEnabled()
+    expect(screen.getByLabelText('Usuario de la app')).toBeEnabled()
+    unmount()
+    render(<Proveedores f={vi.fn()}><FormularioTecnico tecnico={tec({ odoo_employee_id: 55, usuario_de_odoo: true })} abierto alCambiar={vi.fn()} /></Proveedores>)
+    expect(screen.getByLabelText('Usuario de la app')).toBeDisabled()
   })
 })
 
@@ -120,5 +125,35 @@ describe('DialogoPin', () => {
     render(<Proveedores f={vi.fn()}><DialogoPin tecnico={tec({ tiene_pin: true })} abierto alCambiar={vi.fn()} /></Proveedores>)
     expect(screen.getByRole('heading', { name: 'Reiniciar PIN' })).toBeInTheDocument()
     expect(screen.getByText(/el anterior dejará de funcionar/)).toBeInTheDocument()
+  })
+})
+
+describe('DialogoImportarOdoo', () => {
+  const EMPLEADOS = [
+    { odoo_id: 10, nombre: 'Kevin Apaza', cargo: 'Técnico de mantenimiento', departamento: 'MANTENIMIENTO', empresa: 'JALMECO LTDA', usuario_odoo: null, tecnico_id: null },
+    { odoo_id: 11, nombre: 'Ana Mamani', cargo: 'Contadora', departamento: 'ADMINISTRACION', empresa: 'MI EMPRESA', usuario_odoo: 'ana@j.com', tecnico_id: null },
+    { odoo_id: 12, nombre: 'Juan Mamani', cargo: 'Instalador', departamento: 'INSTALACION', empresa: 'JALMECO LTDA', usuario_odoo: null, tecnico_id: 7 },
+  ]
+
+  it('filtra por empresa y texto', () => {
+    expect(filtrarEmpleados(EMPLEADOS, '', 'JALMECO LTDA', '__todos').map((e) => e.odoo_id)).toEqual([10, 12])
+    expect(filtrarEmpleados(EMPLEADOS, 'mamani', '__todos', 'ADMINISTRACION').map((e) => e.odoo_id)).toEqual([11])
+  })
+
+  it('elige los visibles (no los ya importados) e importa', async () => {
+    const enviados: unknown[] = []
+    const f = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith('odoo/empleados')) return json({ empleados: EMPLEADOS })
+      enviados.push(JSON.parse(String(init?.body)))
+      return json({ importados: 2, actualizados: 0, vinculados: 0, nombres: ['Kevin Apaza', 'Ana Mamani'] })
+    })
+    const alCambiar = vi.fn()
+    render(<Proveedores f={f as unknown as typeof fetch}><DialogoImportarOdoo abierto alCambiar={alCambiar} /></Proveedores>)
+
+    expect(await screen.findByLabelText(/Juan Mamani/)).toBeDisabled()
+    await userEvent.click(screen.getByRole('button', { name: 'Elegir los 2 visibles' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Importar 2' }))
+    await vi.waitFor(() => expect(alCambiar).toHaveBeenCalledWith(false))
+    expect(enviados).toEqual([{ odoo_ids: [10, 11] }])
   })
 })

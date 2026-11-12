@@ -69,6 +69,20 @@ export function useProbarOdoo() {
   })
 }
 
+/** Trae ya la asistencia y los datos del personal (sin esperar al worker). */
+export function useSincronizarOdoo() {
+  const { api } = useSesion()
+  const consultas = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.post<{ ok: boolean; jornadas?: number; empleados?: number; mensaje?: string }>('odoo/sincronizar'),
+    onSuccess: () => {
+      for (const clave of ['odoo-estado', 'tecnicos', 'mapa-en-vivo', 'dashboard']) {
+        void consultas.invalidateQueries({ queryKey: [clave] })
+      }
+    },
+  })
+}
+
 export function useGuardarCuenta() {
   const { api } = useSesion()
   return useMutation({

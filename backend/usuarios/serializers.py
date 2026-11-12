@@ -52,7 +52,7 @@ class LoginAdminSerializer(serializers.Serializer):
 
 
 class LoginTecnicoSerializer(serializers.Serializer):
-    usuario = serializers.CharField(max_length=40)
+    usuario = serializers.CharField(max_length=120)
     pin = serializers.RegexField(r'^\d{6}$', error_messages={'invalid': 'El PIN debe tener 6 dígitos.'})
 
 
@@ -154,13 +154,14 @@ class TecnicoAdminSerializer(TecnicoEnVivoSerializer):
 
     class Meta(TecnicoEnVivoSerializer.Meta):
         fields = TecnicoEnVivoSerializer.Meta.fields + [
-            'usuario', 'activo', 'tiene_pin', 'pin_generado_en',
+            'usuario', 'usuario_de_odoo', 'activo', 'tiene_pin', 'pin_generado_en',
             'equipo_modelo', 'equipo_registrado_en', 'odoo_employee_id', 'creado_en',
         ]
 
 
-# Si la persona viene de Odoo, estos datos se cambian en Odoo (la importación los pisaría)
-CAMPOS_DE_ODOO = ['nombre', 'codigo', 'cargo', 'usuario']
+# Si la persona viene de Odoo, estos datos se cambian en Odoo (la sincronización los pisaría).
+# El usuario, solo si vino de Odoo (`usuario_de_odoo`); si no, es generado y se puede cambiar aquí.
+CAMPOS_DE_ODOO = ['nombre', 'cargo']
 
 
 def normalizar_celular(valor):
@@ -180,7 +181,7 @@ class TecnicoEscrituraSerializer(serializers.ModelSerializer):
 
     nombre = serializers.CharField(max_length=160)
     codigo = serializers.CharField(max_length=20, required=False, allow_blank=True, allow_null=True)
-    usuario = serializers.CharField(max_length=40, required=False, allow_blank=True)
+    usuario = serializers.CharField(max_length=120, required=False, allow_blank=True)
     cargo = serializers.CharField(max_length=120, required=False, allow_blank=True, allow_null=True)
     celular_modelo = serializers.CharField(max_length=80, required=False, allow_blank=True, allow_null=True)
     celular_numero = serializers.CharField(max_length=30, required=False, allow_blank=True, allow_null=True)
@@ -230,7 +231,7 @@ class TecnicoEscrituraSerializer(serializers.ModelSerializer):
         usuario = datos.get('usuario', actual.usuario if actual else None)
 
         if actual is not None and actual.odoo_employee_id:
-            for campo in CAMPOS_DE_ODOO:
+            for campo in CAMPOS_DE_ODOO + (['usuario'] if actual.usuario_de_odoo else []):
                 if campo in datos and datos[campo] != getattr(actual, campo):
                     raise serializers.ValidationError({campo: 'Este dato viene de Odoo: cámbialo en Odoo.'})
 

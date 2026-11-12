@@ -189,7 +189,7 @@ Lista (todo el personal, activos e inactivos), ficha, alta y edición.
 ```
 ← GET /tecnicos      { "tecnicos": [ TecnicoAdmin, … ] }
 ← GET /tecnicos/{id}  TecnicoAdmin
-   TecnicoAdmin = TecnicoResumen + { jornada_inicio, usuario, activo, tiene_pin, pin_generado_en,
+   TecnicoAdmin = TecnicoResumen + { jornada_inicio, usuario, usuario_de_odoo, activo, tiene_pin, pin_generado_en,
                   equipo_modelo, equipo_registrado_en, odoo_employee_id, creado_en }
 → POST / PUT { "nombre", "codigo"?, "usuario"?, "cargo"?, "celular_modelo"?, "celular_numero"?, "activo"? }
 ← 201 / 200 TecnicoAdmin
@@ -199,14 +199,25 @@ Lista (todo el personal, activos e inactivos), ficha, alta y edición.
 - `usuario` vacío = el código. Ni el usuario ni el código pueden repetirse entre personas (tampoco
   cruzados), porque el login acepta cualquiera de los dos.
 - `celular_numero` se guarda como `+591 7XXXXXXX` (acepta "712 45830", "59171245830"…).
-- Si la persona viene de Odoo (`odoo_employee_id`), nombre, código, cargo y usuario se cambian en
-  Odoo → 400.
+- Si la persona viene de Odoo (`odoo_employee_id`), nombre y cargo se cambian en Odoo → 400. El
+  usuario también, si es el de Odoo (`usuario_de_odoo: true`); si fue generado, se puede cambiar.
 
-### POST /tecnicos/importar-odoo
-Importa empleados desde Odoo (nombre, código, cargo).
+### GET /odoo/empleados  ·  POST /tecnicos/importar-odoo
+Empleados activos de Odoo para elegir a quién importar, e importación de los elegidos.
 ```
-← { "importados": 3, "nombres": ["Kevin Apaza", "Ever Choque", "Marcelo Flores"] }
+GET /odoo/empleados
+← { "empleados": [ { "odoo_id": 71, "nombre": "DAVID HUAJLLIRE LAIME", "cargo": "Instalador Mecánico",
+                     "departamento": "MANTENIMIENTO", "empresa": "JALMECO LTDA",
+                     "usuario_odoo": null,          // login de Odoo, si tiene
+                     "tecnico_id": null }, … ] }    // ya importado → id en Jalmeco GPS
+POST /tecnicos/importar-odoo  → { "odoo_ids": [71, 73] }      (1–300)
+← { "importados": 2, "actualizados": 0, "vinculados": 0, "nombres": ["DAVID HUAJLLIRE LAIME", …] }
 ```
+- Nombre completo (nombres + apellidos), cargo y usuario de Odoo; sin usuario en Odoo →
+  `nombre.apellido` (sin repetir). Quedan "Sin PIN".
+- `vinculados`: ya estaban cargados a mano con el mismo nombre; se enlazan en vez de duplicarse.
+- Después trae sus asistencias recientes: quien ya marcó entrada aparece en jornada.
+- Si Odoo falla → 502 `ODOO_ERROR` con el motivo.
 
 ### POST /tecnicos/{id}/pin
 Genera o reinicia el PIN (se muestra una sola vez). Guarda `pin_generado_en`.
@@ -314,6 +325,14 @@ Estado de la integración (nunca devuelve la clave API) y prueba de conexión (s
 POST /odoo/probar  ← { "ok": true, "version": "17.0+e", "mensaje": "Conectado como …" }
                    ← { "ok": false, "mensaje": "Usuario o clave API incorrectos…" }
 ```
+
+### POST /odoo/sincronizar
+Trae ya la asistencia y los datos del personal importado (sin esperar al worker).
+```
+← { "ok": true, "jornadas": 3, "empleados": 0 }      // cuántas cambiaron
+← { "ok": false, "mensaje": "…" }
+```
+- Si Odoo se cae, el historial guarda el error una vez por hora (no una fila por minuto).
 - El historial solo guarda corridas **con registros** o **con error**; las vacías solo pisan
   `ultima_sync_ok`. La sincronización manual llegará con la sincronización del worker.
 

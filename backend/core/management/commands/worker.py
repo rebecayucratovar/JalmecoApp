@@ -12,7 +12,9 @@ Tareas (cada una aislada: si una falla, se registra el error y las demás siguen
 - Alerta "Batería baja" ................................... cada 5 min
 - Correo al administrador con las alertas nuevas ......... cada 1 min
 - Retención: borrar datos de más de N meses ............... cada 24 h (y al arrancar)
-- (Pendiente) Sincronización con Odoo: asistencia → jornadas
+- Odoo: asistencia → jornadas ............................. cada `odoo_sync_min` (1–2 min)
+- Odoo: datos del personal importado (nombre, cargo, baja) . cada 1 h
+(Las de Odoo no hacen nada mientras falten los datos de conexión en backend/.env.)
 """
 import logging
 import signal
@@ -27,6 +29,7 @@ from alertas.correo import enviar_pendientes
 from alertas.servicios import revisar_bateria, revisar_sin_conexion
 from core.models import Configuracion
 from core.retencion import limpiar
+from odoo_sync import servicios as odoo
 from verificaciones import servicios as verificaciones
 
 log = logging.getLogger('worker')
@@ -49,12 +52,14 @@ def _tareas():
         Tarea('sin conexión', 60, revisar_sin_conexion),
         Tarea('batería baja', 300, revisar_bateria),
         Tarea('correo de alertas', 60, enviar_pendientes),
+        Tarea('odoo: asistencia', 60, odoo.tarea_asistencia),
+        Tarea('odoo: personal', 3600, odoo.tarea_empleados),
         Tarea('retención', 24 * 3600, lambda: limpiar(Configuracion.actual().retencion_meses)),
     ]
 
 
 class Command(BaseCommand):
-    help = 'Corre las tareas periódicas (huellas, alertas, retención; luego Odoo).'
+    help = 'Corre las tareas periódicas (huellas, alertas, Odoo, retención).'
 
     def add_arguments(self, parser):
         parser.add_argument('--una-vez', action='store_true', help='Correr cada tarea una vez y salir')

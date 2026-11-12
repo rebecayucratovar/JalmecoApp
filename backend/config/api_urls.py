@@ -5,7 +5,9 @@ from alertas.views import AlertasView, AtenderAlertaView, AtenderTodasView, Resu
 from core.inicio import DashboardView
 from core.views import ConfiguracionView
 from jornadas.views import MiEstadoView
-from odoo_sync.views import OdooEstadoView, OdooProbarView
+from odoo_sync.views import (
+    ImportarOdooView, OdooEmpleadosView, OdooEstadoView, OdooProbarView, OdooSincronizarView,
+)
 from ubicaciones.views import MapaEnVivoView, MisUbicacionesView, RecorridoView
 from usuarios.views import (
     LoginAdminView, LoginTecnicoView, MiDispositivoView, MiPerfilView, MiSeguimientoDetenidoView, RefreshView,
@@ -34,6 +36,7 @@ urlpatterns = [
     path('dashboard', DashboardView.as_view(), name='dashboard'),
     path('mapa-en-vivo', MapaEnVivoView.as_view(), name='mapa-en-vivo'),
     path('tecnicos', TecnicosView.as_view(), name='tecnicos'),
+    path('tecnicos/importar-odoo', ImportarOdooView.as_view(), name='tecnicos-importar-odoo'),
     path('tecnicos/<int:pk>', TecnicoView.as_view(), name='tecnico'),
     path('tecnicos/<int:pk>/pin', TecnicoPinView.as_view(), name='tecnico-pin'),
     path('tecnicos/<int:pk>/recorrido', RecorridoView.as_view(), name='tecnico-recorrido'),
@@ -44,6 +47,8 @@ urlpatterns = [
     path('config', ConfiguracionView.as_view(), name='config'),
     path('odoo/estado', OdooEstadoView.as_view(), name='odoo-estado'),
     path('odoo/probar', OdooProbarView.as_view(), name='odoo-probar'),
+    path('odoo/sincronizar', OdooSincronizarView.as_view(), name='odoo-sincronizar'),
+    path('odoo/empleados', OdooEmpleadosView.as_view(), name='odoo-empleados'),
     path('mi-cuenta', MiCuentaView.as_view(), name='mi-cuenta'),
     path('mi-cuenta/password', MiPasswordView.as_view(), name='mi-cuenta-password'),
 ]

@@ -38,7 +38,8 @@ CREATE TABLE tecnico (
     equipo_id            VARCHAR(64),                 -- equipo DETECTADO por la app (Android ID)
     equipo_modelo        VARCHAR(80),                 -- ej. "samsung SM-A155F"
     equipo_registrado_en TIMESTAMPTZ,                 -- si cambia → alerta cambio_equipo
-    usuario              VARCHAR(40)  NOT NULL UNIQUE, -- login (usuario de Odoo o código JAL-XXXX)
+    usuario              VARCHAR(120) NOT NULL UNIQUE, -- login (usuario de Odoo, nombre.apellido o JAL-XXXX)
+    usuario_de_odoo      BOOLEAN      NOT NULL DEFAULT FALSE, -- el usuario vino de Odoo (no se edita aquí)
     pin_hash             VARCHAR(255),                -- PIN de 6 dígitos cifrado (NULL = "Sin PIN")
     pin_generado_en      TIMESTAMPTZ,
     activo               BOOLEAN      NOT NULL DEFAULT TRUE,
