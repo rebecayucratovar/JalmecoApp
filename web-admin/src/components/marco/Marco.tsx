@@ -52,7 +52,7 @@ export function Marco() {
   const titulo = seccionDe(ubicacion.pathname)?.titulo ?? 'Jalmeco GPS'
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-background">
+    <div className="relative flex h-dvh overflow-hidden bg-background">
       {/* Escritorio: menú fijo */}
       <aside className="hidden shrink-0 lg:block">
         <MenuLateral contraido={contraido} alContraer={alternarContraido} />
@@ -71,7 +71,9 @@ export function Marco() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Encabezado titulo={titulo} alAbrirMenu={() => setCajonAbierto(true)} />
-        <main className="flex-1 overflow-y-auto">
+        {/* relative: lo posicionado en absoluto (p. ej. tablas sr-only) queda dentro de este scroll
+            y no estira la página, que daría un segundo scroll */}
+        <main className="relative min-h-0 flex-1 overflow-y-auto">
           <Outlet />
         </main>
       </div>
