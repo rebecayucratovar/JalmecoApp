@@ -139,6 +139,9 @@ alerta; si luego llega otro `equipo_id` → alerta `cambio_equipo`. Sin IMEI (An
   no importados. Si borran la asistencia en Odoo, la jornada se borra (si está vacía) o se cierra.
   Al entrar se limpia la última posición (el mapa no muestra la de ayer). La asistencia trae la
   ubicación de entrada/salida (`in_latitude`…) → `ubicacion_inicio/fin`.
+- **Cuidado con Odoo.sh:** el 12/11/2026 bloqueó el acceso ~90 min (403) mientras el worker iniciaba
+  sesión cada 2 min. Ahora se inicia sesión UNA vez por proceso (`cliente._UIDS`) y, ante un 403/429,
+  todas las tareas de Odoo se pausan 1 h (`servicios.PAUSA_POR_BLOQUEO`) en vez de insistir.
 - **Espejo a Odoo (pedido de gerencia):** subir la última ubicación de cada persona a un campo
   del empleado cada ~8 min, para consultarla en Odoo. El detalle completo queda en el panel
   propio (con enlace). Solo resumen liviano, para no sobrecargar Odoo.

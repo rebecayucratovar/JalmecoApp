@@ -381,11 +381,21 @@ def sincronizar_asistencias(odoo, ahora=None):
 # ---------- tareas del worker ----------
 
 _ultima_corrida = {}
+PAUSA_POR_BLOQUEO = timedelta(hours=1)
+_pausa_hasta = None  # si Odoo respondió 403/429, el worker no vuelve a intentar hasta esta hora
+
+
+def pausada_hasta():
+    return _pausa_hasta if _pausa_hasta and timezone.now() < _pausa_hasta else None
 
 
 def _tarea(tipo, funcion, cada_min=None):
-    """Corre `funcion(odoo)` y lo anota en el historial. Sin datos de Odoo en .env: no hace nada."""
-    if not configurado():
+    """
+    Corre `funcion(odoo)` y lo anota en el historial. Sin datos de Odoo en .env: no hace nada.
+    Si Odoo bloquea (403/429), todas las tareas de Odoo se pausan 1 h en vez de insistir.
+    """
+    global _pausa_hasta
+    if not configurado() or pausada_hasta():
         return None
     if cada_min:
         ahora = timezone.now()
@@ -396,6 +406,8 @@ def _tarea(tipo, funcion, cada_min=None):
     try:
         registros = funcion(ClienteOdoo())
     except ErrorOdoo as e:
+        if e.bloqueo:
+            _pausa_hasta = timezone.now() + PAUSA_POR_BLOQUEO
         SincronizacionOdoo.registrar(tipo, error=e)
         raise
     SincronizacionOdoo.registrar(tipo, registros=registros)
