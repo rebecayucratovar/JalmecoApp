@@ -68,7 +68,8 @@ function crearClienteConsultas() {
 
 export default function App() {
   const [almacen] = useState(() => new AlmacenObservable())
-  const [api] = useState(() => new Api(almacen))
+  // En producción la API está en otro dominio (VITE_API_URL al compilar); en desarrollo, el proxy de Vite
+  const [api] = useState(() => new Api(almacen, { base: import.meta.env.VITE_API_URL || undefined }))
   const [consultas] = useState(crearClienteConsultas)
 
   // Al cerrar sesión (o expirar) se borran los datos en memoria del administrador anterior

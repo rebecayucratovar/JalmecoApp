@@ -1,0 +1,46 @@
+# Backend: pruebas en cada cambio; despliegue al VPS de Hostinger cuando llega a main.
+name: Backend
+
+on:
+  push:
+    branches: ["**"]
+    paths: ["backend/**", "docker-compose*.yml", "deploy/**", ".github/workflows/backend.yml"]
+  pull_request:
+    paths: ["backend/**", "docker-compose*.yml", "deploy/**"]
+  workflow_dispatch: {}  # botón "Run workflow" para desplegar a mano
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: false  # nunca cortar un despliegue a la mitad
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pruebas (Docker, igual que en desarrollo)
+        run: |
+          cp backend/.env.example backend/.env
+          docker compose up -d --build --wait db
+          docker compose run --rm backend python manage.py test
+      - name: El modo producción no arranca con la clave de ejemplo
+        run: |
+          docker compose run --rm -e DEBUG=False backend python manage.py check 2>&1 | grep -q "SECRET_KEY de producción"
+
+  desplegar:
+    needs: pruebas
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: produccion  # en GitHub: Settings → Environments (puede pedir aprobación)
+    steps:
+      - name: Desplegar en el VPS por SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USUARIO }}
+          key: ${{ secrets.VPS_CLAVE_SSH }}
+          port: ${{ secrets.VPS_PUERTO || 22 }}
+          command_timeout: 15m
+          script: cd /opt/jalmeco && ./deploy/deploy.sh

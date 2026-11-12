@@ -170,6 +170,17 @@ cd web-admin && npm install && npm run dev
 cd mobile && flutter run
 ```
 
+## Producción (Hostinger) — ver `docs/despliegue.md`
+
+- **Panel:** hosting web de Hostinger, subdominio (p. ej. `gps.jalmeco.com.bo`). Se compila con
+  `VITE_API_URL` y se sube por FTP (`.github/workflows/panel.yml`); `public/.htaccess` resuelve las rutas.
+- **API + base + worker:** VPS de Hostinger con `docker-compose.prod.yml` (gunicorn, Caddy con HTTPS
+  automático, base sin puertos publicados). `deploy/deploy.sh` lo actualiza; GitHub Actions lo corre por
+  SSH al llegar a `main` (`.github/workflows/backend.yml`). Respaldo diario: `deploy/backup.sh` (cron).
+- Variables del servidor: `deploy/env.produccion.example` → `backend/.env` en el VPS. Con `DEBUG=False`
+  el backend no arranca si `SECRET_KEY` es la de ejemplo. CORS solo para el dominio del panel.
+- APK: `flutter build apk --release --dart-define=API_URL=https://api.…/api/v1`.
+
 ## Decisiones pendientes
 
 - Confirmar que se instala la app en los celulares de **todo el personal** de La Paz

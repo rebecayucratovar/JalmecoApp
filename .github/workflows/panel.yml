@@ -1,0 +1,64 @@
+# Panel web: revisión y pruebas en cada cambio; al llegar a main, se compila y se sube a Hostinger.
+name: Panel web
+
+on:
+  push:
+    branches: ["**"]
+    paths: ["web-admin/**", ".github/workflows/panel.yml"]
+  pull_request:
+    paths: ["web-admin/**"]
+  workflow_dispatch: {}
+
+concurrency:
+  group: panel-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: web-admin
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+          cache: npm
+          cache-dependency-path: web-admin/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build  # incluye la revisión de tipos (tsc -b)
+
+  desplegar:
+    needs: pruebas
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: produccion
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+          cache: npm
+          cache-dependency-path: web-admin/package-lock.json
+      - run: npm ci
+      - name: Compilar apuntando a la API de producción
+        run: |
+          test -n "$VITE_API_URL" || { echo "Falta la variable VITE_API_URL (Settings → Variables)"; exit 1; }
+          npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+      - name: Subir a Hostinger por FTP (solo los archivos que cambiaron)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVIDOR }}
+          username: ${{ secrets.FTP_USUARIO }}
+          password: ${{ secrets.FTP_CLAVE }}
+          protocol: ftps
+          local-dir: web-admin/dist/
+          server-dir: ${{ vars.FTP_CARPETA }}  # p. ej. public_html/ del subdominio, con / al final

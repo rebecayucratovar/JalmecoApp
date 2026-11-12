@@ -32,6 +32,16 @@ DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()]
 
 
+def _lista(nombre):
+    return [v.strip() for v in os.getenv(nombre, '').split(',') if v.strip()]
+
+
+# Producción: no arrancar con la clave de ejemplo (con ella se pueden falsificar sesiones)
+if not DEBUG and (len(SECRET_KEY) < 50 or 'insecure' in SECRET_KEY or SECRET_KEY.startswith('cambia')):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured('SECRET_KEY de producción: usa una clave al azar de 50+ caracteres (ver .env.example).')
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -45,6 +55,7 @@ INSTALLED_APPS = [
     # Terceros
     'rest_framework',
     'rest_framework_simplejwt',
+    'corsheaders',
     # Apps del proyecto
     'usuarios',
     'jornadas',
@@ -58,6 +69,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # antes de CommonMiddleware
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -194,3 +206,25 @@ EMAIL_BACKEND = ('django.core.mail.backends.smtp.EmailBackend' if EMAIL_HOST
                  else 'django.core.mail.backends.console.EmailBackend')
 # Enlace al panel en los correos (opcional)
 PANEL_URL = os.getenv('PANEL_URL', '')
+
+# ---------- Producción: panel en otro dominio (Hostinger) y HTTPS detrás de Caddy ----------
+# El panel (p. ej. https://gps.jalmeco.com.bo) llama a la API (https://api.…): solo ese origen.
+# La sesión va en el encabezado Authorization (no en cookies): sin credenciales de CORS.
+CORS_ALLOWED_ORIGINS = _lista('CORS_ALLOWED_ORIGINS')
+CORS_ALLOW_CREDENTIALS = False
+# Para el /admin de Django por HTTPS
+CSRF_TRUSTED_ORIGINS = _lista('CSRF_TRUSTED_ORIGINS')
+# Ruta del admin de Django (respaldo). En producción, una no obvia: "gestion-7f3k/" en vez de "admin/"
+ADMIN_URL = os.getenv('ADMIN_URL', 'admin/')
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # Caddy termina el HTTPS
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31_536_000  # 1 año: el navegador solo usará HTTPS
+    SECURE_REFERRER_POLICY = 'same-origin'
+    X_FRAME_OPTIONS = 'DENY'
+    SILENCED_SYSTEM_CHECKS = [
+        'security.W008',  # la redirección HTTP → HTTPS la hace Caddy
+        'security.W005', 'security.W021',  # HSTS sin subdominios: otros sitios de la empresa pueden no tener HTTPS
+    ]

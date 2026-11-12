@@ -12,8 +12,8 @@ export default defineConfig({
     alias: { '@': path.resolve(import.meta.dirname, 'src') },
   },
   server: {
-    // En desarrollo el panel llama a /api/... y Vite lo pasa al backend de Docker
-    // (mismo origen: no hace falta CORS). En producción lo hará el servidor web (nginx).
+    // En desarrollo el panel llama a /api/... y Vite lo pasa al backend de Docker (mismo origen:
+    // no hace falta CORS). En producción el panel está en Hostinger y llama a VITE_API_URL.
     proxy: { '/api': 'http://localhost:8000' },
   },
   test: {
