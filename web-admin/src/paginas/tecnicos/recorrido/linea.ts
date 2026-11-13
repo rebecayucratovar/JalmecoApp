@@ -5,14 +5,18 @@ import type { Parada, PuntoRecorrido, Recorrido } from './datos'
 export const MAX_HUECO_MS = 20 * 60_000
 const MIN_TRAMO_MS = 60_000
 
+/** Un hueco entre dos jornadas es "salida al almuerzo" si cae en la franja con este margen. */
+const MARGEN_ALMUERZO_MS = 30 * 60_000
+
 export type Evento =
-  | { tipo: 'entrada'; hora: number }
-  | { tipo: 'salida'; hora: number; automatica?: boolean }
+  | { tipo: 'entrada'; hora: number; regreso?: boolean }
+  | { tipo: 'salida'; hora: number; automatica?: boolean; almuerzo?: boolean }
   | { tipo: 'en_curso'; hora: number }
   | { tipo: 'parada'; inicio: number; fin: number; numero: number; parada: Parada }
   | { tipo: 'trayecto'; inicio: number; fin: number; metros: number }
   | { tipo: 'sin_datos'; inicio: number; fin: number }
-  | { tipo: 'pausa'; inicio: number; fin: number; nombre: string }
+  /** `marcada`: marcó salida y regreso del almuerzo en Odoo (hueco entre dos jornadas). */
+  | { tipo: 'pausa'; inicio: number; fin: number; nombre: string; marcada?: boolean }
 
 const ms = (iso: string) => new Date(iso).getTime()
 
@@ -60,22 +64,48 @@ export function construirLinea(r: Recorrido, ahora: number = Date.now()): Evento
   let numero = 0
   const ultimoPunto = r.puntos.length ? ms(r.puntos[r.puntos.length - 1].hora) : 0
 
-  for (const j of r.jornadas) {
+  // Almuerzo marcado en Odoo: salió (fin de una jornada) y volvió (inicio de la siguiente) cerca de la
+  // franja. Se muestra UN almuerzo entre las dos, no un pedacito al final de una y otro al inicio de la otra.
+  const almuerzoTras = r.jornadas.map((j, k) => {
+    const siguiente = r.jornadas[k + 1]
+    if (!j.fin || !siguiente) return null
+    const desde = ms(j.fin)
+    const hasta = ms(siguiente.inicio)
+    const p = r.pausas.find((x) => desde < ms(x.fin) && hasta > ms(x.inicio)
+      && desde >= ms(x.inicio) - MARGEN_ALMUERZO_MS && hasta <= ms(x.fin) + MARGEN_ALMUERZO_MS)
+    return p ? { pausa: p, desde, hasta } : null
+  })
+
+  r.jornadas.forEach((j, k) => {
     const inicio = ms(j.inicio)
     const fin = j.fin ? ms(j.fin) : Math.max(Math.min(ahora, Date.now()), ultimoPunto)
-    eventos.push({ tipo: 'entrada', hora: inicio })
+    const alSalir = almuerzoTras[k]
+    const alVolver = k > 0 ? almuerzoTras[k - 1] : null
+    eventos.push({ tipo: 'entrada', hora: inicio, ...(alVolver && { regreso: true }) })
+
+    // Pedazos de la franja dentro de la jornada. Los que tocan la salida/regreso del almuerzo marcado
+    // no se muestran aparte: solo recortan el tramo útil (en la franja no hay puntos, por privacidad).
+    let inicioUtil = inicio
+    let finUtil = fin
+    const pausas = r.pausas
+      .map((p) => ({ tipo: 'pausa' as const, inicio: Math.max(ms(p.inicio), inicio), fin: Math.min(ms(p.fin), fin), nombre: p.nombre, p }))
+      .filter((x) => x.fin > x.inicio)
+      .filter((x) => {
+        if (alSalir && x.p === alSalir.pausa && x.fin === fin) { finUtil = x.inicio; return false }
+        if (alVolver && x.p === alVolver.pausa && x.inicio === inicio) { inicioUtil = x.fin; return false }
+        return true
+      })
+      .map(({ p: _p, ...x }) => x)
 
     // Paradas y pausas de esta jornada, en orden
     const dentro: Evento[] = [
       ...r.paradas
         .filter((p) => ms(p.inicio) >= inicio && ms(p.inicio) <= fin)
         .map((p) => ({ tipo: 'parada' as const, inicio: ms(p.inicio), fin: ms(p.fin), numero: 0, parada: p })),
-      ...r.pausas
-        .map((p) => ({ tipo: 'pausa' as const, inicio: Math.max(ms(p.inicio), inicio), fin: Math.min(ms(p.fin), fin), nombre: p.nombre }))
-        .filter((p) => p.fin > p.inicio),
+      ...pausas,
     ].sort((a, b) => (a as { inicio: number }).inicio - (b as { inicio: number }).inicio)
 
-    let cursor = inicio
+    let cursor = inicioUtil
     // Entre dos eventos: trayectos, cortados por "sin datos" donde no hubo puntos por más de 20 min
     const hueco = (desde: number, hasta: number) => {
       if (hasta - desde < MIN_TRAMO_MS) return
@@ -100,9 +130,14 @@ export function construirLinea(r: Recorrido, ahora: number = Date.now()): Evento
       else eventos.push(ev)
       cursor = Math.max(cursor, ev.fin)
     }
-    hueco(cursor, fin)
-    eventos.push(j.fin ? { tipo: 'salida', hora: fin, automatica: j.cierre_automatico } : { tipo: 'en_curso', hora: fin })
-  }
+    hueco(cursor, finUtil)
+    eventos.push(j.fin
+      ? { tipo: 'salida', hora: fin, automatica: j.cierre_automatico, ...(alSalir && { almuerzo: true }) }
+      : { tipo: 'en_curso', hora: fin })
+    if (alSalir) {
+      eventos.push({ tipo: 'pausa', inicio: alSalir.desde, fin: alSalir.hasta, nombre: alSalir.pausa.nombre, marcada: true })
+    }
+  })
   return eventos
 }
 

@@ -141,6 +141,15 @@ class MiDispositivoView(APIView):
         return Response(DispositivoRespuestaSerializer({'ok': True, 'cambio_equipo': cambio}).data)
 
 
+# Fuera de jornada no se dejó de rastrear nada todavía: el problema es la PRÓXIMA jornada
+FUERA_DE_JORNADA = {
+    'cerro_sesion': ('Cerró sesión en la app estando fuera de jornada. Hasta que vuelva a entrar con su '
+                     'usuario y PIN, la app no registrará su próxima jornada.'),
+    'permiso_revocado': ('Quitó el permiso de ubicación estando fuera de jornada. Hasta que lo vuelva a dar, '
+                         'la app no registrará su próxima jornada.'),
+}
+
+
 class MiSeguimientoDetenidoView(APIView):
     """
     POST /api/v1/mi/seguimiento-detenido { motivo } — la app avisa que dejará de rastrear
@@ -172,10 +181,8 @@ class MiSeguimientoDetenidoView(APIView):
             Alerta.objects.create(tecnico=tecnico, tipo=Alerta.Tipo.SEGUIMIENTO_DETENIDO,
                                   nivel=Alerta.Nivel.CRITICO, mensaje=f'{texto}.')
             creada = True
-        elif motivo != 'gps_apagado':
-            mensaje = (f'{texto} fuera de jornada. Mientras no vuelva a '
-                       f'{"entrar a la app" if motivo == "cerro_sesion" else "dar el permiso de ubicación"}, '
-                       'no se registrará su próxima jornada.')
+        elif motivo in FUERA_DE_JORNADA:
+            mensaje = FUERA_DE_JORNADA[motivo]
             repetida = Alerta.objects.filter(
                 tecnico=tecnico, tipo=Alerta.Tipo.SEGUIMIENTO_DETENIDO, mensaje=mensaje,
                 estado=Alerta.Estado.NUEVA, creada_en__gte=timezone.now() - self.REPETIR_FUERA_DE_JORNADA,

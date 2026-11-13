@@ -29,7 +29,9 @@ class SeguimientoDetenidoTest(TestCase):
         self.assertTrue(self.avisar('cerro_sesion'))
         alerta = Alerta.objects.get()
         self.assertEqual((alerta.tipo, alerta.nivel), ('seguimiento_detenido', 'advertencia'))
-        self.assertIn('no se registrará su próxima jornada', alerta.mensaje)
+        self.assertIn('fuera de jornada', alerta.mensaje)
+        self.assertIn('no registrará su próxima jornada', alerta.mensaje)
+        self.assertNotIn('durante la jornada', alerta.mensaje)  # no mezclar los dos casos
         self.assertFalse(self.avisar('cerro_sesion'))  # repetida en 12 h: no
         self.assertTrue(self.avisar('permiso_revocado'))  # otro motivo: sí
         self.assertEqual(Alerta.objects.count(), 2)

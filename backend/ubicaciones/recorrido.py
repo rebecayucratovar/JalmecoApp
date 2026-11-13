@@ -137,14 +137,15 @@ def recorrido_del_dia(tecnico, fecha, ahora=None):
     puntos = limpiar([Punto(lat=p.y, lng=p.x, hora=t, velocidad=v, bateria=b) for p, t, v, b in filas])
     paradas = calcular_paradas(puntos)
 
-    # Pausas (almuerzo) de ese día que caen dentro de alguna jornada
+    # Pausas (almuerzo) de ese día. Van siempre que haya jornadas: si marcó salida y regreso del
+    # almuerzo en Odoo (p. ej. 11:58 y 13:02) puede que ninguna jornada toque la franja, y el panel
+    # igual muestra "Almuerzo" en el hueco entre las dos (ver web-admin …/recorrido/linea.ts).
     pausas = []
-    for f in franjas_activas():
+    for f in franjas_activas() if jornadas else []:
         if f.hora_inicio >= f.hora_fin:
             continue
-        ini, fin = hoy_a_las(mediodia, f.hora_inicio), hoy_a_las(mediodia, f.hora_fin)
-        if any(_solape(ini, fin, j.inicio, j.fin or ahora) for j in jornadas):
-            pausas.append({'nombre': f.nombre, 'inicio': ini, 'fin': fin})
+        pausas.append({'nombre': f.nombre, 'inicio': hoy_a_las(mediodia, f.hora_inicio),
+                       'fin': hoy_a_las(mediodia, f.hora_fin)})
 
     # Tiempo en jornada (sin las pausas) y tiempo en movimiento (en jornada, fuera de paradas)
     en_jornada = timedelta(0)

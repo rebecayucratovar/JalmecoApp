@@ -37,6 +37,33 @@ describe('línea de tiempo', () => {
     expect(primerTrayecto.tipo === 'trayecto' && Math.round(primerTrayecto.metros / 100)).toBe(22) // ~2,2 km
   })
 
+  it('almuerzo marcado en Odoo: un solo almuerzo entre la salida y el regreso', () => {
+    const eventos = construirLinea(recorrido({
+      jornadas: [
+        { id: 1, inicio: lp(8), fin: lp(12, 2), estado: 'cerrada' },
+        { id: 2, inicio: lp(12, 58), fin: lp(17), estado: 'cerrada' },
+      ],
+    }))
+    const almuerzos = eventos.filter((e) => e.tipo === 'pausa')
+    expect(almuerzos).toEqual([{ tipo: 'pausa', inicio: t(12, 2), fin: t(12, 58), nombre: 'Almuerzo', marcada: true }])
+    const i = eventos.findIndex((e) => e.tipo === 'pausa')
+    expect(eventos[i - 1]).toMatchObject({ tipo: 'salida', hora: t(12, 2), almuerzo: true })
+    expect(eventos[i + 1]).toMatchObject({ tipo: 'entrada', hora: t(12, 58), regreso: true })
+    // Sin tramos "fantasma" de 12:00–12:02 ni 12:58–13:00 (en la franja no hay puntos)
+    expect(eventos.some((e) => 'inicio' in e && e.tipo === 'trayecto' && e.inicio >= t(12) && e.inicio < t(13))).toBe(false)
+  })
+
+  it('una salida lejos del almuerzo no se toma como almuerzo', () => {
+    const eventos = construirLinea(recorrido({
+      jornadas: [
+        { id: 1, inicio: lp(8), fin: lp(10), estado: 'cerrada' },
+        { id: 2, inicio: lp(15), fin: lp(17), estado: 'cerrada' },
+      ],
+    }))
+    expect(eventos.some((e) => e.tipo === 'pausa')).toBe(false)
+    expect(eventos.some((e) => e.tipo === 'salida' && e.almuerzo)).toBe(false)
+  })
+
   it('jornada abierta termina en "en curso"', () => {
     const eventos = construirLinea(recorrido({ jornadas: [{ id: 1, inicio: lp(8), fin: null, estado: 'activa' }], pausas: [] }), t(10))
     expect(eventos[eventos.length - 1].tipo).toBe('en_curso')

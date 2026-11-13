@@ -54,8 +54,8 @@ function Contenido({ evento: e }: { evento: Evento }) {
         <>
           <Icono className="bg-exito/15 text-exito"><LogInIcon className="size-4" /></Icono>
           <span>
-            <span className="block text-sm font-medium">Entrada · {hora(new Date(e.hora))}</span>
-            <span className="block text-xs text-muted-foreground">Marcación de asistencia</span>
+            <span className="block text-sm font-medium">{e.regreso ? 'Regreso del almuerzo' : 'Entrada'} · {hora(new Date(e.hora))}</span>
+            <span className="block text-xs text-muted-foreground">Marcación de asistencia en Odoo</span>
           </span>
         </>
       )
@@ -64,7 +64,7 @@ function Contenido({ evento: e }: { evento: Evento }) {
         <>
           <Icono className="bg-muted text-muted-foreground"><LogOutIcon className="size-4" /></Icono>
           <span className="min-w-0 pt-1.5">
-            <span className="block text-sm font-medium">Salida · {hora(new Date(e.hora))}</span>
+            <span className="block text-sm font-medium">{e.almuerzo ? 'Salida al almuerzo' : 'Salida'} · {hora(new Date(e.hora))}</span>
             {e.automatica && (
               <span className="block text-xs text-aviso">No marcó salida en Odoo: la cerró el sistema</span>
             )}
@@ -95,11 +95,12 @@ function Contenido({ evento: e }: { evento: Evento }) {
         <>
           <Icono className="bg-muted text-muted-foreground"><UtensilsIcon className="size-4" /></Icono>
           <span>
-            <span className="block text-sm font-medium">
+            <span className="block text-sm font-medium tabular-nums">
               {e.nombre} {hora(new Date(e.inicio))}–{hora(new Date(e.fin))}
+              {e.marcada && <span className="font-normal text-muted-foreground"> ({duracion(minutos(e.inicio, e.fin))})</span>}
             </span>
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <EyeOffIcon className="size-3" /> Sin seguimiento (privacidad)
+              <EyeOffIcon className="size-3" /> {e.marcada ? 'Marcado en Odoo · sin seguimiento' : 'Sin seguimiento (privacidad)'}
             </span>
           </span>
         </>

@@ -105,7 +105,10 @@ alerta; si luego llega otro `equipo_id` → alerta `cambio_equipo`. Sin IMEI (An
   marca `cierre_automatico` y crea la alerta `salida_no_marcada`. La sincronización con Odoo no
   la reabre; si luego marca en Odoo una salida anterior, vale la de Odoo.
 - **Almuerzo / privacidad:** entre 12:00 y 13:00 (hora America/La_Paz) la app NO recolecta ni
-  guarda puntos, y el backend rechaza cualquier punto en esa franja.
+  guarda puntos, y el backend rechaza cualquier punto en esa franja. El personal además marca en
+  Odoo la salida al almuerzo y el regreso (tolerancia de la empresa: ~12:10 y 13:05; los atrasos
+  los descuenta Odoo/RR. HH., no este sistema) → quedan 2 jornadas; el recorrido muestra UN
+  "Almuerzo" en el hueco entre ellas si cae en la franja ±30 min (`recorrido/linea.ts`).
 - **Huella:** la app pide confirmar identidad con la huella del celular en momentos aleatorios,
   ~2 veces al día (mínimo 1), vía notificación que abre la pantalla de verificación. Si no se
   responde en ~3 min → alerta al supervisor. (Las huellas se controlan con otra app de la
