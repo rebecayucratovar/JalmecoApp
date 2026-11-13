@@ -46,7 +46,9 @@ export function tieneUbicacion(t: TecnicoMapa): t is TecnicoMapa & { ultima_lat:
 }
 
 export function contarPorEstado(tecnicos: TecnicoMapa[]): Record<Filtro, number> {
-  const cuenta: Record<Filtro, number> = { todos: tecnicos.length, en_trayecto: 0, en_parada: 0, sin_conexion: 0, fuera_jornada: 0 }
+  const cuenta: Record<Filtro, number> = {
+    todos: tecnicos.length, en_trayecto: 0, en_parada: 0, sin_conexion: 0, ubicacion_apagada: 0, fuera_jornada: 0,
+  }
   for (const t of tecnicos) cuenta[t.estado_actual] = (cuenta[t.estado_actual] ?? 0) + 1
   return cuenta
 }

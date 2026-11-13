@@ -176,6 +176,7 @@ despliegue a mano.
 | Secret | `FTP_USUARIO` | usuario de la cuenta FTP del paso 2.3 |
 | Secret | `FTP_CLAVE` | su contraseña |
 | Variable | `VITE_API_URL` | `https://api.jalmeco.com.bo/api/v1` |
+| Variable | `DESPLIEGUE_ACTIVO` | `si` (sin esto, al llegar a main solo corren las pruebas) |
 | Variable | `FTP_CARPETA` | `./` si la cuenta FTP ya está limitada a la carpeta del subdominio |
 
 Llave para GitHub Actions (una aparte, solo para desplegar). En el VPS, como `deploy`:

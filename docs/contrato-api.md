@@ -51,7 +51,7 @@ Login del técnico (app móvil).
 {
   "id": 12, "codigo": "JAL-1047", "nombre": "Marco Antonio Condori",
   "cargo": "Supervisor de campo", "foto_url": "…",
-  "estado_actual": "en_trayecto",      // fuera_jornada | en_trayecto | en_parada | sin_conexion
+  "estado_actual": "en_trayecto",      // fuera_jornada | en_trayecto | en_parada | sin_conexion | ubicacion_apagada
   "ultima_lat": -16.5412, "ultima_lng": -68.0790, "ultima_bateria": 91,
   "ultima_velocidad": 28.4,             // km/h, del último punto
   "ultima_actualizacion": "2026-11-07T11:30:05-04:00",
@@ -131,6 +131,8 @@ La app avisa que va a dejar de rastrear. Solo crea alerta si hay jornada activa.
   ubicación sigue apagada **5 min** después de avisarle al trabajador con una notificación.
 - Fuera de jornada, `cerro_sesion`: la misma alerta como **advertencia** ("no registrará su próxima
   jornada"), una cada 12 h. `gps_apagado` y `permiso_revocado` fuera de jornada: sin alerta.
+- `preaviso: true` (solo `gps_apagado`, en jornada): sin alerta; el panel muestra al técnico como
+  `ubicacion_apagada` al instante. Vuelve a su estado normal con el próximo punto GPS.
 - Al cerrar sesión, llamarlo **antes** de borrar el token.
 
 ### GET /mi/verificacion-pendiente
@@ -180,7 +182,7 @@ y el mapa chico de `/mapa-en-vivo`).
 ```
 ← { "actualizado_en": "…",
     "personal": { "activos": 48, "en_jornada": 12, "en_trayecto": 7, "en_parada": 4,
-                  "sin_conexion": 1, "trabajaron_hoy": 14, "sin_pin": 3 },
+                  "sin_conexion": 1, "ubicacion_apagada": 0, "trabajaron_hoy": 14, "sin_pin": 3 },
     "alertas": { "nuevas": 2, "criticas": 1, "hoy": 5 },
     "verificaciones_hoy": { "pedidas": 10, "exito": 8, "no_realizadas": 1, "pendientes": 1 },
     "sin_conexion_min": 30,          // umbral de la alerta (para el texto de la tarjeta)

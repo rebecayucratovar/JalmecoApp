@@ -20,6 +20,26 @@ class SeguimientoDetenidoTest(TestCase):
         self.assertEqual(r.status_code, 200, r.content)
         return r.json()['alerta_creada']
 
+    def avisar_datos(self, datos):
+        return self.client.post('/api/v1/mi/seguimiento-detenido', datos,
+                                content_type='application/json', **self.auth).json()
+
+    def test_preaviso_de_ubicacion_apagada_se_ve_sin_alerta(self):
+        Jornada.objects.create(tecnico=self.t, inicio=timezone.now())
+        r = self.avisar_datos({'motivo': 'gps_apagado', 'preaviso': True})
+        self.assertFalse(r['alerta_creada'])
+        self.assertFalse(Alerta.objects.exists())
+        self.t.refresh_from_db()
+        self.assertEqual(self.t.estado_actual, 'ubicacion_apagada')
+        # A los 5 min la app manda el aviso normal → alerta crítica
+        self.assertTrue(self.avisar('gps_apagado'))
+        self.assertEqual(Alerta.objects.get().nivel, 'critico')
+
+    def test_preaviso_fuera_de_jornada_no_cambia_nada(self):
+        self.avisar_datos({'motivo': 'gps_apagado', 'preaviso': True})
+        self.t.refresh_from_db()
+        self.assertEqual(self.t.estado_actual, 'fuera_jornada')
+
     def test_en_jornada_es_critica(self):
         Jornada.objects.create(tecnico=self.t, inicio=timezone.now())
         self.assertTrue(self.avisar('gps_apagado'))

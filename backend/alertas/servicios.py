@@ -34,6 +34,8 @@ def revisar_sin_conexion(ahora=None):
     creadas = 0
     for jornada in _jornadas_activas():
         t = jornada.tecnico
+        if t.estado_actual == Tecnico.Estado.UBICACION_APAGADA:
+            continue  # se sabe por qué no hay datos: ya tiene (o tendrá) su alerta de seguimiento detenido
         desde = max(m for m in (t.ultima_actualizacion, jornada.inicio, fin_pausa) if m is not None)
         if ahora - desde < umbral:
             continue

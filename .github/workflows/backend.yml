@@ -30,7 +30,8 @@ jobs:
 
   desplegar:
     needs: pruebas
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    # Solo cuando el servidor está listo: Settings → Variables → DESPLIEGUE_ACTIVO = si
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DESPLIEGUE_ACTIVO == 'si'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: produccion  # en GitHub: Settings → Environments (puede pedir aprobación)

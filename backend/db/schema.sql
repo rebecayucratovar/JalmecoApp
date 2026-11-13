@@ -46,7 +46,8 @@ CREATE TABLE tecnico (
     -- Último estado (denormalizado, para que el mapa en vivo cargue rápido)
     estado_actual        VARCHAR(20)  NOT NULL DEFAULT 'fuera_jornada'
                          CHECK (estado_actual IN
-                           ('fuera_jornada','en_trayecto','en_parada','sin_conexion')),
+                           ('fuera_jornada','en_trayecto','en_parada','sin_conexion',
+                            'ubicacion_apagada')),
     ultima_lat           DOUBLE PRECISION,
     ultima_lng           DOUBLE PRECISION,
     ultima_bateria       SMALLINT     CHECK (ultima_bateria BETWEEN 0 AND 100),

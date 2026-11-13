@@ -53,7 +53,8 @@ class DashboardView(APIView):
         activos = con_jornada(Tecnico.objects.filter(activo=True))
 
         en_jornada = list(activos.filter(en_jornada=True).values_list('estado_actual', flat=True))
-        estados = {e: 0 for e in (Tecnico.Estado.EN_TRAYECTO, Tecnico.Estado.EN_PARADA, Tecnico.Estado.SIN_CONEXION)}
+        estados = {e: 0 for e in (Tecnico.Estado.EN_TRAYECTO, Tecnico.Estado.EN_PARADA, Tecnico.Estado.SIN_CONEXION,
+                                  Tecnico.Estado.UBICACION_APAGADA)}
         for estado in en_jornada:
             # Recién entrado y sin puntos todavía: cuenta como "en parada" (igual que el mapa)
             estados[estado if estado in estados else Tecnico.Estado.EN_PARADA] += 1
@@ -78,6 +79,7 @@ class DashboardView(APIView):
                 'en_trayecto': estados[Tecnico.Estado.EN_TRAYECTO],
                 'en_parada': estados[Tecnico.Estado.EN_PARADA],
                 'sin_conexion': estados[Tecnico.Estado.SIN_CONEXION],
+                'ubicacion_apagada': estados[Tecnico.Estado.UBICACION_APAGADA],
                 'trabajaron_hoy': Jornada.objects.filter(inicio__gte=inicio_hoy).values('tecnico').distinct().count(),
                 'sin_pin': activos.filter(pin_hash__isnull=True).count(),
             },

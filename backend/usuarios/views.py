@@ -177,8 +177,14 @@ class MiSeguimientoDetenidoView(APIView):
         texto = MOTIVOS_SEGUIMIENTO[motivo]
         en_jornada = Jornada.objects.filter(tecnico=tecnico, estado=Jornada.Estado.ACTIVA).exists()
 
+        if en_jornada and motivo == 'gps_apagado':
+            # Se ve en el panel al instante; vuelve a su estado normal con el próximo punto GPS
+            Tecnico.objects.filter(pk=tecnico.pk).update(estado_actual=Tecnico.Estado.UBICACION_APAGADA)
+
         creada = False
-        if en_jornada:
+        if datos.validated_data['preaviso']:
+            pass  # todavía sin alerta: se le avisó al trabajador y tiene unos minutos para activarla
+        elif en_jornada:
             Alerta.objects.create(tecnico=tecnico, tipo=Alerta.Tipo.SEGUIMIENTO_DETENIDO,
                                   nivel=Alerta.Nivel.CRITICO, mensaje=f'{texto}.')
             creada = True

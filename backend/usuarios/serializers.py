@@ -117,6 +117,9 @@ MOTIVOS_SEGUIMIENTO = {
 
 class SeguimientoDetenidoSerializer(serializers.Serializer):
     motivo = serializers.ChoiceField(choices=list(MOTIVOS_SEGUIMIENTO))
+    # Aviso previo (sin alerta): la ubicación se acaba de apagar y el trabajador tiene unos minutos
+    # para activarla. El panel ya lo muestra como "Ubicación apagada".
+    preaviso = serializers.BooleanField(required=False, default=False)
 
 
 class SeguimientoDetenidoRespuestaSerializer(serializers.Serializer):

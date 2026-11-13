@@ -112,7 +112,8 @@ class Servidor {
         lotes.add(puntos);
         return _json({'recibidos': puntos.length, 'rechazados': 0});
       case '/mi/seguimiento-detenido':
-        avisos.add((jsonDecode(req.body) as Map)['motivo'] as String);
+        final cuerpo = jsonDecode(req.body) as Map;
+        avisos.add('${cuerpo['motivo']}${cuerpo['preaviso'] == true ? ' (preaviso)' : ''}');
         return _json({'ok': true, 'alerta_creada': true});
       case '/auth/refresh':
         return _json({'error': 'Token inválido'}, 401);
@@ -284,16 +285,16 @@ void main() {
     gps.encendido = false;
     await motor.tick();
     expect(avisosUbicacion, [true]); // notificación al trabajador
-    expect(servidor.avisos, isEmpty); // todavía no al supervisor
+    expect(servidor.avisos, ['gps_apagado (preaviso)']); // el panel lo ve, todavía sin alerta
     expect(notificaciones.last, 'Jalmeco GPS · Ubicación desactivada');
 
     ahora = ahora.add(const Duration(minutes: 4));
     await motor.tick();
-    expect(servidor.avisos, isEmpty);
+    expect(servidor.avisos, ['gps_apagado (preaviso)']);
     ahora = ahora.add(const Duration(minutes: 1));
     await motor.tick();
     await motor.tick();
-    expect(servidor.avisos, ['gps_apagado']); // una sola vez
+    expect(servidor.avisos, ['gps_apagado (preaviso)', 'gps_apagado']); // la alerta, una sola vez
 
     gps.encendido = true;
     await motor.tick();
@@ -311,7 +312,7 @@ void main() {
     await motor.tick();
     ahora = ahora.add(const Duration(minutes: 10));
     await motor.tick();
-    expect(servidor.avisos, isEmpty);
+    expect(servidor.avisos, ['gps_apagado (preaviso)']); // nunca la alerta
     expect(avisosUbicacion, [true, false]);
   });
 

@@ -30,7 +30,7 @@ const PERSONAL = [
 
 describe('lógica del mapa', () => {
   it('cuenta por estado', () => {
-    expect(contarPorEstado(PERSONAL)).toEqual({ todos: 4, en_trayecto: 1, en_parada: 1, sin_conexion: 1, fuera_jornada: 1 })
+    expect(contarPorEstado(PERSONAL)).toEqual({ todos: 4, en_trayecto: 1, en_parada: 1, sin_conexion: 1, ubicacion_apagada: 0, fuera_jornada: 1 })
   })
 
   it('filtra por estado y busca sin importar tildes, código ni cargo', () => {

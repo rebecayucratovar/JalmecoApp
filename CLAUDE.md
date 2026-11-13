@@ -86,7 +86,9 @@ alerta; si luego llega otro `equipo_id` → alerta `cambio_equipo`. Sin IMEI (An
 
 - **Estados (los calcula el sistema, nadie los marca a mano):**
   Fuera de jornada (sin jornada), En trayecto (velocidad alta), En parada (quieto),
-  Sin conexión (sin datos). "En sucursal" y "En punto de trabajo" son Fase 2 (requieren
+  Sin conexión (sin datos por más de `sin_conexion_min`: señal, celular apagado, app cerrada…),
+  Ubicación apagada (en jornada con el GPS apagado: la app lo avisa al instante con `preaviso`;
+  vuelve al estado normal con el próximo punto; no genera además "Sin conexión"). "En sucursal" y "En punto de trabajo" son Fase 2 (requieren
   la tabla `zona`).
 - **Horario laboral:** 08:00–12:00 y 13:00–18:00 (en `configuracion`: horario_inicio/fin).
   Es informativo: la jornada real la marcan la entrada y salida de Odoo.
@@ -198,10 +200,8 @@ Resuelto: retención = 12 meses. Nombre: Jalmeco GPS. Login: usuario de Odoo o g
 (nombre.apellido); el código JAL no está en Odoo. Cargo: casi todos lo tienen en Odoo (job_id).
 Celular: asignado (admin + Excel) y detectado (app). Sin IMEI ni celular del administrador.
 
-## Reparto del equipo (3 personas)
+## Equipo
 
-- Persona A: backend + worker + Odoo.
-- Persona B: app móvil Flutter.
-- Persona C: panel web React.
-
-Punto de encuentro: el **contrato de la API** (definir antes de programar en paralelo).
+Hoy una sola persona trabaja en todo (backend, app y panel). Se planeó para 3 (backend / app /
+panel), por eso el **contrato de la API** (`docs/contrato-api.md`) es el punto de encuentro:
+mantenerlo al día con cada cambio de endpoints.

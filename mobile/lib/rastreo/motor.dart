@@ -117,6 +117,7 @@ class Motor {
   StreamSubscription<PuntoGps>? _suscripcion;
   int? _distanciaSuscrita;
   bool _avisoGpsEnviado = false;
+  bool _preavisoGpsEnviado = false;
   DateTime? _gpsApagadoDesde; // en jornada; null = encendido (o fuera de jornada)
   bool _enTick = false;
   bool _enviando = false;
@@ -209,6 +210,15 @@ class Motor {
         _gpsApagadoDesde = _reloj();
         alUbicacionApagada?.call(true); // primero, al trabajador
       }
+      if (!_preavisoGpsEnviado) {
+        // El panel lo muestra al instante como "Ubicación apagada", todavía sin alerta
+        _preavisoGpsEnviado = true;
+        try {
+          await api.post('mi/seguimiento-detenido', {'motivo': 'gps_apagado', 'preaviso': true});
+        } on ApiError catch (_) {
+          _preavisoGpsEnviado = false;
+        }
+      }
       if (!_avisoGpsEnviado && _reloj().difference(_gpsApagadoDesde!) >= esperaAvisoGps) {
         _avisoGpsEnviado = true;
         try {
@@ -270,6 +280,7 @@ class Motor {
 
   void _gpsEncendidoOFueraDeJornada() {
     _avisoGpsEnviado = false;
+    _preavisoGpsEnviado = false;
     if (_gpsApagadoDesde != null) {
       _gpsApagadoDesde = null;
       alUbicacionApagada?.call(false);

@@ -43,6 +43,8 @@ class TecnicoEstado(models.TextChoices):
     EN_TRAYECTO = 'en_trayecto', 'En trayecto'
     EN_PARADA = 'en_parada', 'En parada'
     SIN_CONEXION = 'sin_conexion', 'Sin conexión'
+    # En jornada con la ubicación (GPS) del celular apagada: lo avisa la app al instante
+    UBICACION_APAGADA = 'ubicacion_apagada', 'Ubicación apagada'
 
 
 class Tecnico(models.Model):

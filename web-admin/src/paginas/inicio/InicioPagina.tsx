@@ -23,6 +23,7 @@ export interface Dashboard {
     en_trayecto: number
     en_parada: number
     sin_conexion: number
+    ubicacion_apagada: number
     trabajaron_hoy: number
     sin_pin: number
   }
@@ -83,8 +84,12 @@ export default function InicioPagina() {
           detalle="en movimiento" />
         <Indicador a="/mapa" etiqueta={ESTADOS.en_parada.etiqueta} punto={ESTADOS.en_parada.color} valor={p.en_parada}
           detalle="quietos en un lugar" />
-        <Indicador a="/mapa" etiqueta={ESTADOS.sin_conexion.etiqueta} punto={ESTADOS.sin_conexion.color} valor={p.sin_conexion}
-          detalle={`sin datos por más de ${consulta.data.sin_conexion_min} min`} tono={p.sin_conexion > 0 ? 'peligro' : undefined} />
+        {/* Sin datos del celular: por señal (más de N min) o porque apagó la ubicación (al instante) */}
+        <Indicador a="/mapa" etiqueta={ESTADOS.sin_conexion.etiqueta} punto={ESTADOS.sin_conexion.color}
+          valor={p.sin_conexion + p.ubicacion_apagada} tono={p.sin_conexion + p.ubicacion_apagada > 0 ? 'peligro' : undefined}
+          detalle={p.ubicacion_apagada
+            ? `${p.ubicacion_apagada} con la ubicación apagada${p.sin_conexion ? ` · ${p.sin_conexion} sin datos` : ''}`
+            : `sin datos por más de ${consulta.data.sin_conexion_min} min`} />
         <Indicador a="/alertas?tipo=verificacion_no_realizada&rango=hoy&estado=todas" etiqueta="Sin verificar" punto="#7c3aed"
           valor={v.no_realizadas} tono={v.no_realizadas > 0 ? 'violeta' : undefined}
           detalle={v.pedidas ? `huellas no realizadas hoy · ${v.exito} de ${v.pedidas} confirmadas` : 'aún no se pidieron huellas hoy'} />

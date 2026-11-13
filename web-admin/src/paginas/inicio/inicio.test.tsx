@@ -16,7 +16,7 @@ vi.mock('@/paginas/mapa/MapaLeaflet', () => ({ MapaLeaflet: () => <div>mapa</div
 const hoy = hoyLaPaz()
 const DATOS: Dashboard = {
   actualizado_en: new Date().toISOString(),
-  personal: { activos: 48, en_jornada: 12, en_trayecto: 7, en_parada: 4, sin_conexion: 1, trabajaron_hoy: 14, sin_pin: 3 },
+  personal: { activos: 48, en_jornada: 12, en_trayecto: 7, en_parada: 4, sin_conexion: 1, ubicacion_apagada: 0, trabajaron_hoy: 14, sin_pin: 3 },
   alertas: { nuevas: 2, criticas: 1, hoy: 5 },
   verificaciones_hoy: { pedidas: 10, exito: 8, no_realizadas: 1, pendientes: 1 },
   sin_conexion_min: 30,
