@@ -74,6 +74,7 @@ class Motor {
     this.alCambiar,
     this.alSesionCerrada,
     this.alVerificacion,
+    this.alUbicacionApagada,
     DateTime Function()? reloj,
   }) : _reloj = reloj ?? DateTime.now;
 
@@ -81,6 +82,10 @@ class Motor {
   static const consultaEnJornada = Duration(seconds: 30);
   static const consultaFuera = Duration(minutes: 2);
   static const envioCada = Duration(minutes: 1);
+
+  /// Ubicación apagada en jornada: primero se avisa al trabajador (notificación que suena) y,
+  /// si sigue apagada pasado este tiempo, recién al supervisor (puede ser un olvido al marcar).
+  static const esperaAvisoGps = Duration(minutes: 5);
   static const loteMaximo = 500;
   static const lotesPorEnvio = 5;
 
@@ -95,6 +100,9 @@ class Motor {
   /// Verificación de huella: (id, segundos restantes) al aparecer una nueva; (null, 0) cuando
   /// deja de estar pendiente (respondida o vencida) para quitar el aviso.
   final void Function(int? id, int segundos)? alVerificacion;
+
+  /// true: mostrar al trabajador "Activa tu ubicación"; false: quitar ese aviso.
+  final void Function(bool apagada)? alUbicacionApagada;
   final DateTime Function() _reloj;
 
   EstadoJornada? estado;
@@ -109,6 +117,7 @@ class Motor {
   StreamSubscription<PuntoGps>? _suscripcion;
   int? _distanciaSuscrita;
   bool _avisoGpsEnviado = false;
+  DateTime? _gpsApagadoDesde; // en jornada; null = encendido (o fuera de jornada)
   bool _enTick = false;
   bool _enviando = false;
   String? _notificacionActual;
@@ -126,7 +135,11 @@ class Motor {
         if (_detenido) return;
       }
       await _aplicarModo(decidirModo(estado, _reloj()));
-      if (modo == ModoRastreo.activo) await _vigilarGps();
+      if (modo == ModoRastreo.activo) {
+        await _vigilarGps();
+      } else {
+        _gpsEncendidoOFueraDeJornada(); // fuera de jornada o en el almuerzo la ubicación puede estar apagada
+      }
       if (ultimoEnvio == null || _reloj().difference(ultimoEnvio!) >= envioCada) {
         await enviarCola();
       }
@@ -192,10 +205,14 @@ class Motor {
       await _aplicarModo(modo);
     }
     if (!gpsActivado) {
-      if (!_avisoGpsEnviado) {
+      if (_gpsApagadoDesde == null) {
+        _gpsApagadoDesde = _reloj();
+        alUbicacionApagada?.call(true); // primero, al trabajador
+      }
+      if (!_avisoGpsEnviado && _reloj().difference(_gpsApagadoDesde!) >= esperaAvisoGps) {
         _avisoGpsEnviado = true;
         try {
-          await api.post('mi/seguimiento-detenido', {'motivo': 'gps_apagado'});
+          await api.post('mi/seguimiento-detenido', {'motivo': 'gps_apagado'}); // ahora, al supervisor
         } on ApiError catch (_) {
           _avisoGpsEnviado = false; // sin señal: se reintenta en el próximo tick
         }
@@ -203,7 +220,7 @@ class Motor {
       _actualizarNotificacion();
       return;
     }
-    _avisoGpsEnviado = false;
+    _gpsEncendidoOFueraDeJornada();
     _actualizarNotificacion();
 
     // Quieto: el stream por distancia no entrega nada → un punto cada intervalo_seg.
@@ -249,6 +266,14 @@ class Motor {
       _enviando = false;
     }
     return enviados;
+  }
+
+  void _gpsEncendidoOFueraDeJornada() {
+    _avisoGpsEnviado = false;
+    if (_gpsApagadoDesde != null) {
+      _gpsApagadoDesde = null;
+      alUbicacionApagada?.call(false);
+    }
   }
 
   void _actualizarNotificacion() {

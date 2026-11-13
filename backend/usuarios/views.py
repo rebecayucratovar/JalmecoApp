@@ -141,12 +141,13 @@ class MiDispositivoView(APIView):
         return Response(DispositivoRespuestaSerializer({'ok': True, 'cambio_equipo': cambio}).data)
 
 
-# Fuera de jornada no se dejó de rastrear nada todavía: el problema es la PRÓXIMA jornada
+# Fuera de jornada no se dejó de rastrear nada todavía. Solo se avisa si cerró sesión, porque la
+# app NO podrá registrar su próxima jornada (no puede volver a entrar sola). La ubicación apagada
+# o sin permiso fuera de jornada no avisa: si sigue así al marcar la entrada, la app le avisa al
+# trabajador y, a los 5 min, al supervisor (mobile/lib/rastreo/motor.dart, esperaAvisoGps).
 FUERA_DE_JORNADA = {
     'cerro_sesion': ('Cerró sesión en la app estando fuera de jornada. Hasta que vuelva a entrar con su '
                      'usuario y PIN, la app no registrará su próxima jornada.'),
-    'permiso_revocado': ('Quitó el permiso de ubicación estando fuera de jornada. Hasta que lo vuelva a dar, '
-                         'la app no registrará su próxima jornada.'),
 }
 
 
@@ -155,12 +156,12 @@ class MiSeguimientoDetenidoView(APIView):
     POST /api/v1/mi/seguimiento-detenido { motivo } — la app avisa que dejará de rastrear
     (cerrar sesión, quitar permiso, apagar GPS).
 
-    - En jornada: alerta CRÍTICA (se dejó de rastrear en pleno trabajo).
-    - Fuera de jornada, cerrar sesión o quitar el permiso: alerta de ADVERTENCIA, porque la app no
-      podrá registrar la PRÓXIMA jornada hasta que vuelva a entrar / dar el permiso (Android no deja
-      que una app cerrada arranque sola al marcar la entrada). Una por motivo cada 12 h.
-    - Fuera de jornada, apagar el GPS: sin alerta (es normal apagarlo al salir del trabajo; si sigue
-      apagado al marcar la entrada, la app avisa entonces y es crítica).
+    - En jornada: alerta CRÍTICA (se dejó de rastrear en pleno trabajo). La app manda `gps_apagado`
+      recién si la ubicación sigue apagada 5 min después de avisarle al trabajador.
+    - Fuera de jornada, cerrar sesión: alerta de ADVERTENCIA, porque la app no podrá registrar la
+      PRÓXIMA jornada hasta que vuelva a entrar (Android no deja que una app cerrada arranque sola
+      al marcar la entrada). Una cada 12 h.
+    - Fuera de jornada, apagar la ubicación o quitar el permiso: sin alerta.
     """
 
     permission_classes = [EsTecnico]

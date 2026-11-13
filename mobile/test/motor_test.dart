@@ -133,6 +133,7 @@ void main() {
   late Motor motor;
   late bool sesionCerrada;
   late List<String> avisosHuella;
+  late List<bool> avisosUbicacion;
 
   setUp(() async {
     FlutterSecureStorage.setMockInitialValues({});
@@ -143,6 +144,7 @@ void main() {
     notificaciones = [];
     sesionCerrada = false;
     avisosHuella = [];
+    avisosUbicacion = [];
     final sesion = Sesion();
     await sesion.iniciar(access: 'a', refresh: 'r', tecnico: {'nombre': 'Juan'});
     motor = Motor(
@@ -154,6 +156,7 @@ void main() {
       reloj: () => ahora,
       alSesionCerrada: () => sesionCerrada = true,
       alVerificacion: (id, s) => avisosHuella.add(id == null ? 'quitar' : 'mostrar $id ${s}s'),
+      alUbicacionApagada: avisosUbicacion.add,
     );
   });
 
@@ -276,18 +279,40 @@ void main() {
     expect(cola.puntos, isEmpty);
   });
 
-  test('GPS apagado en jornada: avisa una sola vez y cambia la notificación', () async {
+  test('GPS apagado en jornada: avisa al trabajador al instante y al supervisor a los 5 min', () async {
     await motor.tick();
     gps.encendido = false;
     await motor.tick();
-    await motor.tick();
-    expect(servidor.avisos, ['gps_apagado']);
+    expect(avisosUbicacion, [true]); // notificación al trabajador
+    expect(servidor.avisos, isEmpty); // todavía no al supervisor
     expect(notificaciones.last, 'Jalmeco GPS · Ubicación desactivada');
+
+    ahora = ahora.add(const Duration(minutes: 4));
+    await motor.tick();
+    expect(servidor.avisos, isEmpty);
+    ahora = ahora.add(const Duration(minutes: 1));
+    await motor.tick();
+    await motor.tick();
+    expect(servidor.avisos, ['gps_apagado']); // una sola vez
 
     gps.encendido = true;
     await motor.tick();
     expect(notificaciones.last, 'Jalmeco GPS · Jornada activa');
     expect(gps.escuchando, isTrue);
+    expect(avisosUbicacion, [true, false]); // se quitó el aviso
+  });
+
+  test('si activa la ubicación antes de 5 min, el supervisor no recibe nada', () async {
+    await motor.tick();
+    gps.encendido = false;
+    await motor.tick();
+    ahora = ahora.add(const Duration(minutes: 3));
+    gps.encendido = true;
+    await motor.tick();
+    ahora = ahora.add(const Duration(minutes: 10));
+    await motor.tick();
+    expect(servidor.avisos, isEmpty);
+    expect(avisosUbicacion, [true, false]);
   });
 
   test('al terminar la jornada deja de capturar', () async {

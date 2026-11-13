@@ -108,6 +108,7 @@ class _ManejadorRastreo extends TaskHandler {
       alSesionCerrada: () => FlutterForegroundTask.stopService(),
       alVerificacion: (id, segundos) =>
           id == null ? AvisoVerificacion.quitar() : AvisoVerificacion.mostrar(segundos),
+      alUbicacionApagada: (apagada) => apagada ? AvisoUbicacion.mostrar() : AvisoUbicacion.quitar(),
     );
     await _motor!.tick();
   }

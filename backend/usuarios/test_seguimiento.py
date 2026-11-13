@@ -33,9 +33,9 @@ class SeguimientoDetenidoTest(TestCase):
         self.assertIn('no registrará su próxima jornada', alerta.mensaje)
         self.assertNotIn('durante la jornada', alerta.mensaje)  # no mezclar los dos casos
         self.assertFalse(self.avisar('cerro_sesion'))  # repetida en 12 h: no
-        self.assertTrue(self.avisar('permiso_revocado'))  # otro motivo: sí
-        self.assertEqual(Alerta.objects.count(), 2)
+        self.assertEqual(Alerta.objects.count(), 1)
 
-    def test_apagar_gps_fuera_de_jornada_no_avisa(self):
+    def test_ubicacion_apagada_o_sin_permiso_fuera_de_jornada_no_avisa(self):
         self.assertFalse(self.avisar('gps_apagado'))
+        self.assertFalse(self.avisar('permiso_revocado'))
         self.assertFalse(Alerta.objects.exists())

@@ -127,9 +127,10 @@ La app avisa que va a dejar de rastrear. Solo crea alerta si hay jornada activa.
 → { "motivo": "cerro_sesion" }   // cerro_sesion | permiso_revocado | gps_apagado
 ← { "ok": true, "alerta_creada": true }
 ```
-- En jornada: alerta **`seguimiento_detenido`** crítica.
-- Fuera de jornada, `cerro_sesion` o `permiso_revocado`: la misma alerta como **advertencia** ("no se
-  registrará su próxima jornada"), una por motivo cada 12 h. `gps_apagado` fuera de jornada: sin alerta.
+- En jornada: alerta **`seguimiento_detenido`** crítica. `gps_apagado`: la app lo envía recién si la
+  ubicación sigue apagada **5 min** después de avisarle al trabajador con una notificación.
+- Fuera de jornada, `cerro_sesion`: la misma alerta como **advertencia** ("no registrará su próxima
+  jornada"), una cada 12 h. `gps_apagado` y `permiso_revocado` fuera de jornada: sin alerta.
 - Al cerrar sesión, llamarlo **antes** de borrar el token.
 
 ### GET /mi/verificacion-pendiente

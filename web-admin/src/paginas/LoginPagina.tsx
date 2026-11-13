@@ -70,7 +70,7 @@ export function LoginPagina() {
               type="email"
               autoComplete="username"
               inputMode="email"
-              placeholder="nombre@jalmeco.com"
+              placeholder="nombre@jalmeco.com.bo"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-10"
@@ -85,6 +85,7 @@ export function LoginPagina() {
                 id="password"
                 type={verPassword ? 'text' : 'password'}
                 autoComplete="current-password"
+                placeholder="Ingresa tu contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-10 pr-10"

@@ -49,3 +49,42 @@ class AvisoVerificacion {
     } catch (_) {}
   }
 }
+
+/// Notificación de ALTA prioridad "Activa tu ubicación": suena una vez y queda fija mientras la
+/// ubicación esté apagada en jornada. Si no la activa en unos minutos, se avisa al supervisor.
+class AvisoUbicacion {
+  static const _id = 7002;
+
+  static Future<void> mostrar() async {
+    try {
+      await AvisoVerificacion._iniciar();
+      await AvisoVerificacion._plugin.show(
+        id: _id,
+        title: 'Activa tu ubicación',
+        body: 'Tu jornada empezó y la ubicación del celular está apagada. Actívala para no generar '
+            'un aviso a tu supervisor.',
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'ubicacion',
+            'Ubicación apagada',
+            channelDescription: 'Aviso cuando la ubicación está apagada durante la jornada.',
+            importance: Importance.max,
+            priority: Priority.high,
+            category: AndroidNotificationCategory.reminder,
+            ongoing: true, // no se puede descartar: se quita sola al activar la ubicación
+            onlyAlertOnce: true,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('No se pudo mostrar el aviso de ubicación: $e');
+    }
+  }
+
+  static Future<void> quitar() async {
+    try {
+      await AvisoVerificacion._iniciar();
+      await AvisoVerificacion._plugin.cancel(id: _id);
+    } catch (_) {}
+  }
+}
