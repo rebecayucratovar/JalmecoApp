@@ -4,4 +4,7 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- SOLO desarrollo: permite http:// al backend local (10.0.2.2 o la IP de la PC).
+         En producción la API va por https y esto no se incluye. -->
+    <application android:usesCleartextTraffic="true"/>
 </manifest>

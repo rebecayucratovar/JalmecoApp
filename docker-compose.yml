@@ -9,7 +9,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"  # solo desde esta PC
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -26,6 +26,22 @@ services:
       - ./backend:/app
     ports:
       - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Tareas periódicas (huellas al azar, alertas, Odoo, retención).
+  # Misma imagen que el backend; un solo worker (las tareas no están pensadas para correr en paralelo).
+  worker:
+    build: ./backend
+    command: python manage.py worker
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: db
+    volumes:
+      - ./backend:/app
     depends_on:
       db:
         condition: service_healthy

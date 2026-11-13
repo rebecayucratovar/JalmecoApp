@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -139,13 +141,31 @@ class MiDispositivoView(APIView):
         return Response(DispositivoRespuestaSerializer({'ok': True, 'cambio_equipo': cambio}).data)
 
 
+# Fuera de jornada no se dejó de rastrear nada todavía. Solo se avisa si cerró sesión, porque la
+# app NO podrá registrar su próxima jornada (no puede volver a entrar sola). La ubicación apagada
+# o sin permiso fuera de jornada no avisa: si sigue así al marcar la entrada, la app le avisa al
+# trabajador y, a los 5 min, al supervisor (mobile/lib/rastreo/motor.dart, esperaAvisoGps).
+FUERA_DE_JORNADA = {
+    'cerro_sesion': ('Cerró sesión en la app estando fuera de jornada. Hasta que vuelva a entrar con su '
+                     'usuario y PIN, la app no registrará su próxima jornada.'),
+}
+
+
 class MiSeguimientoDetenidoView(APIView):
     """
     POST /api/v1/mi/seguimiento-detenido { motivo } — la app avisa que dejará de rastrear
-    (cerrar sesión, quitar permiso, apagar GPS). Solo genera alerta si hay jornada activa.
+    (cerrar sesión, quitar permiso, apagar GPS).
+
+    - En jornada: alerta CRÍTICA (se dejó de rastrear en pleno trabajo). La app manda `gps_apagado`
+      recién si la ubicación sigue apagada 5 min después de avisarle al trabajador.
+    - Fuera de jornada, cerrar sesión: alerta de ADVERTENCIA, porque la app no podrá registrar la
+      PRÓXIMA jornada hasta que vuelva a entrar (Android no deja que una app cerrada arranque sola
+      al marcar la entrada). Una cada 12 h.
+    - Fuera de jornada, apagar la ubicación o quitar el permiso: sin alerta.
     """
 
     permission_classes = [EsTecnico]
+    REPETIR_FUERA_DE_JORNADA = timedelta(hours=12)
 
     def post(self, request):
         from jornadas.models import Jornada
@@ -153,10 +173,29 @@ class MiSeguimientoDetenidoView(APIView):
         datos = SeguimientoDetenidoSerializer(data=request.data)
         datos.is_valid(raise_exception=True)
         tecnico = request.user
+        motivo = datos.validated_data['motivo']
+        texto = MOTIVOS_SEGUIMIENTO[motivo]
         en_jornada = Jornada.objects.filter(tecnico=tecnico, estado=Jornada.Estado.ACTIVA).exists()
-        if en_jornada:
-            Alerta.objects.create(
-                tecnico=tecnico, tipo=Alerta.Tipo.SEGUIMIENTO_DETENIDO, nivel=Alerta.Nivel.CRITICO,
-                mensaje=f'{MOTIVOS_SEGUIMIENTO[datos.validated_data["motivo"]]}.',
-            )
-        return Response(SeguimientoDetenidoRespuestaSerializer({'ok': True, 'alerta_creada': en_jornada}).data)
+
+        if en_jornada and motivo == 'gps_apagado':
+            # Se ve en el panel al instante; vuelve a su estado normal con el próximo punto GPS
+            Tecnico.objects.filter(pk=tecnico.pk).update(estado_actual=Tecnico.Estado.UBICACION_APAGADA)
+
+        creada = False
+        if datos.validated_data['preaviso']:
+            pass  # todavía sin alerta: se le avisó al trabajador y tiene unos minutos para activarla
+        elif en_jornada:
+            Alerta.objects.create(tecnico=tecnico, tipo=Alerta.Tipo.SEGUIMIENTO_DETENIDO,
+                                  nivel=Alerta.Nivel.CRITICO, mensaje=f'{texto}.')
+            creada = True
+        elif motivo in FUERA_DE_JORNADA:
+            mensaje = FUERA_DE_JORNADA[motivo]
+            repetida = Alerta.objects.filter(
+                tecnico=tecnico, tipo=Alerta.Tipo.SEGUIMIENTO_DETENIDO, mensaje=mensaje,
+                estado=Alerta.Estado.NUEVA, creada_en__gte=timezone.now() - self.REPETIR_FUERA_DE_JORNADA,
+            ).exists()
+            if not repetida:
+                Alerta.objects.create(tecnico=tecnico, tipo=Alerta.Tipo.SEGUIMIENTO_DETENIDO,
+                                      nivel=Alerta.Nivel.ADVERTENCIA, mensaje=mensaje)
+                creada = True
+        return Response(SeguimientoDetenidoRespuestaSerializer({'ok': True, 'alerta_creada': creada}).data)

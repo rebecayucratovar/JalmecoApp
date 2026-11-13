@@ -1,11 +1,19 @@
 """Rutas de la API, montadas bajo /api/v1/ (ver docs/contrato-api.md)."""
 from django.urls import path
 
+from alertas.views import AlertasView, AtenderAlertaView, AtenderTodasView, CorreoPruebaView, ResumenAlertasView
+from core.inicio import DashboardView
+from core.views import ConfiguracionView
 from jornadas.views import MiEstadoView
-from ubicaciones.views import MapaEnVivoView, MisUbicacionesView
+from odoo_sync.views import (
+    ImportarOdooView, OdooEmpleadosView, OdooEstadoView, OdooProbarView, OdooSincronizarView,
+)
+from ubicaciones.views import MapaEnVivoView, MisUbicacionesView, RecorridoView
 from usuarios.views import (
     LoginAdminView, LoginTecnicoView, MiDispositivoView, MiPerfilView, MiSeguimientoDetenidoView, RefreshView,
 )
+from usuarios.cuenta import MiCuentaView, MiPasswordView
+from usuarios.panel import TecnicoPinView, TecnicosView, TecnicoView
 from verificaciones.views import MiResponderVerificacionView, MiVerificacionPendienteView
 
 urlpatterns = [
@@ -25,5 +33,23 @@ urlpatterns = [
          name='mi-verificacion-responder'),
 
     # Panel admin (rol administrador)
+    path('dashboard', DashboardView.as_view(), name='dashboard'),
     path('mapa-en-vivo', MapaEnVivoView.as_view(), name='mapa-en-vivo'),
+    path('tecnicos', TecnicosView.as_view(), name='tecnicos'),
+    path('tecnicos/importar-odoo', ImportarOdooView.as_view(), name='tecnicos-importar-odoo'),
+    path('tecnicos/<int:pk>', TecnicoView.as_view(), name='tecnico'),
+    path('tecnicos/<int:pk>/pin', TecnicoPinView.as_view(), name='tecnico-pin'),
+    path('tecnicos/<int:pk>/recorrido', RecorridoView.as_view(), name='tecnico-recorrido'),
+    path('alertas', AlertasView.as_view(), name='alertas'),
+    path('alertas/resumen', ResumenAlertasView.as_view(), name='alertas-resumen'),
+    path('alertas/correo-prueba', CorreoPruebaView.as_view(), name='alertas-correo-prueba'),
+    path('alertas/atender-todas', AtenderTodasView.as_view(), name='alertas-atender-todas'),
+    path('alertas/<int:pk>/atender', AtenderAlertaView.as_view(), name='alerta-atender'),
+    path('config', ConfiguracionView.as_view(), name='config'),
+    path('odoo/estado', OdooEstadoView.as_view(), name='odoo-estado'),
+    path('odoo/probar', OdooProbarView.as_view(), name='odoo-probar'),
+    path('odoo/sincronizar', OdooSincronizarView.as_view(), name='odoo-sincronizar'),
+    path('odoo/empleados', OdooEmpleadosView.as_view(), name='odoo-empleados'),
+    path('mi-cuenta', MiCuentaView.as_view(), name='mi-cuenta'),
+    path('mi-cuenta/password', MiPasswordView.as_view(), name='mi-cuenta-password'),
 ]

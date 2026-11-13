@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
@@ -53,12 +55,17 @@ class SincronizacionOdoo(models.Model):
         """
         Anota el resultado de una corrida del worker.
         - Correcta: pisa la "última sincronización OK" y guarda fila solo si hubo registros.
-        - Con error: siempre guarda fila.
+        - Con error: guarda fila, salvo que sea el mismo error de la última corrida de ese tipo en
+          la última hora (si Odoo se cae, no llenar el historial con una fila por minuto).
         """
         from core.models import Configuracion
 
         ahora = timezone.now()
         if error:
+            anterior = cls.objects.filter(tipo=tipo).order_by('-fecha').first()
+            if (anterior and anterior.resultado == cls.Resultado.ERROR and anterior.mensaje == str(error)
+                    and ahora - anterior.fecha < timedelta(hours=1)):
+                return None
             return cls.objects.create(
                 fecha=ahora, tipo=tipo, resultado=cls.Resultado.ERROR, registros=registros, mensaje=str(error),
             )

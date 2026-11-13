@@ -51,7 +51,7 @@ Login del técnico (app móvil).
 {
   "id": 12, "codigo": "JAL-1047", "nombre": "Marco Antonio Condori",
   "cargo": "Supervisor de campo", "foto_url": "…",
-  "estado_actual": "en_trayecto",      // fuera_jornada | en_trayecto | en_parada | sin_conexion
+  "estado_actual": "en_trayecto",      // fuera_jornada | en_trayecto | en_parada | sin_conexion | ubicacion_apagada
   "ultima_lat": -16.5412, "ultima_lng": -68.0790, "ultima_bateria": 91,
   "ultima_velocidad": 28.4,             // km/h, del último punto
   "ultima_actualizacion": "2026-11-07T11:30:05-04:00",
@@ -75,7 +75,8 @@ Estado de la jornada actual (para la pantalla Inicio).
     "franja_almuerzo": { "inicio": "12:00", "fin": "13:00" },
     "resumen_hoy": { "tiempo_jornada_min": 263, "distancia_km": 37.4 },
     "rastreo": { "distancia_m": 25, "intervalo_seg": 120 },
-    "ultima_verificacion": { "solicitada_en": "…11:30…", "respondida_en": "…11:31…",
+    "ultima_verificacion": { "id": 88, "segundos_restantes": null,
+                             "solicitada_en": "…11:30…", "respondida_en": "…11:31…",
                              "resultado": "exito" }        // o null; pendiente | exito | no_realizada
   }
 ```
@@ -88,6 +89,10 @@ Estado de la jornada actual (para la pantalla Inicio).
 - `rastreo`: cómo debe capturar la app (configurable en el panel). Un punto cada vez que se
   mueve `distancia_m` metros **o** cada `intervalo_seg` segundos si está quieto (para que el
   panel sepa que sigue conectado). La app lo relee en cada sondeo.
+- `ultima_verificacion.segundos_restantes`: solo si está `pendiente` y vigente. La app arma la
+  cuenta regresiva con este número (no con su reloj) y muestra el aviso "Confirma tu identidad".
+  Las vencidas se cierran como `no_realizada` con alerta (worker cada minuto:
+  `cerrar_verificaciones_vencidas`; mi/estado también lo hace para quien consulta).
 
 ### POST /mi/ubicaciones
 Enviar puntos GPS (en lote; soporta los acumulados offline).
@@ -122,8 +127,13 @@ La app avisa que va a dejar de rastrear. Solo crea alerta si hay jornada activa.
 → { "motivo": "cerro_sesion" }   // cerro_sesion | permiso_revocado | gps_apagado
 ← { "ok": true, "alerta_creada": true }
 ```
-- Genera la alerta **`seguimiento_detenido`** (crítica). Al cerrar sesión, llamarlo **antes** de
-  borrar el token.
+- En jornada: alerta **`seguimiento_detenido`** crítica. `gps_apagado`: la app lo envía recién si la
+  ubicación sigue apagada **5 min** después de avisarle al trabajador con una notificación.
+- Fuera de jornada, `cerro_sesion`: la misma alerta como **advertencia** ("no registrará su próxima
+  jornada"), una cada 12 h. `gps_apagado` y `permiso_revocado` fuera de jornada: sin alerta.
+- `preaviso: true` (solo `gps_apagado`, en jornada): sin alerta; el panel muestra al técnico como
+  `ubicacion_apagada` al instante. Vuelve a su estado normal con el próximo punto GPS.
+- Al cerrar sesión, llamarlo **antes** de borrar el token.
 
 ### GET /mi/verificacion-pendiente
 ¿Hay una verificación de huella vigente? (la app también la recibe por notificación).
@@ -158,26 +168,61 @@ Datos del técnico y políticas (pantalla Perfil).
 ## 4. Endpoints del PANEL ADMIN (rol administrador)
 
 ### GET /mapa-en-vivo
-Posiciones actuales de todos los que están en jornada.
+Todo el personal activo (el panel lo consulta cada ~10 s).
 ```
-← { "actualizado_en": "…", "tecnicos": [ TecnicoResumen, … ] }
+← { "actualizado_en": "…", "tecnicos": [ TecnicoResumen + { "jornada_inicio": "…" | null }, … ] }
 ```
+- En jornada: con su última posición, batería y velocidad.
+- Fuera de jornada: `estado_actual: "fuera_jornada"` y **sin** `ultima_lat/lng/bateria/velocidad/
+  actualizacion` (null): fuera de la jornada no se muestra dónde estuvo (privacidad).
 
 ### GET /dashboard
-KPIs del inicio.
+Resumen de Inicio (el panel lo consulta cada 30 s; las últimas alertas salen de `/alertas/resumen`
+y el mapa chico de `/mapa-en-vivo`).
 ```
-← { "en_jornada": 42, "en_campo": 32, "sin_conexion": 4, "alertas_activas": 8,
-    "tiempo_campo_semana": [ { "fecha": "2026-11-02", "horas": 190 }, … ] }
+← { "actualizado_en": "…",
+    "personal": { "activos": 48, "en_jornada": 12, "en_trayecto": 7, "en_parada": 4,
+                  "sin_conexion": 1, "ubicacion_apagada": 0, "trabajaron_hoy": 14, "sin_pin": 3 },
+    "alertas": { "nuevas": 2, "criticas": 1, "hoy": 5 },
+    "verificaciones_hoy": { "pedidas": 10, "exito": 8, "no_realizadas": 1, "pendientes": 1 },
+    "sin_conexion_min": 30,          // umbral de la alerta (para el texto de la tarjeta)
+    "horas_campo": [ { "fecha": "2026-11-05", "horas": 80.5, "personas": 10 }, … ] }   // 7 días, sin almuerzo
 ```
 
 ### GET /tecnicos  ·  GET /tecnicos/{id}  ·  POST /tecnicos  ·  PUT /tecnicos/{id}
-Lista (con estado actual), detalle, alta y edición de técnicos.
+Lista (todo el personal, activos e inactivos), ficha, alta y edición.
+```
+← GET /tecnicos      { "tecnicos": [ TecnicoAdmin, … ] }
+← GET /tecnicos/{id}  TecnicoAdmin
+   TecnicoAdmin = TecnicoResumen + { jornada_inicio, usuario, usuario_de_odoo, activo, tiene_pin, pin_generado_en,
+                  equipo_modelo, equipo_registrado_en, odoo_employee_id, creado_en }
+→ POST / PUT { "nombre", "codigo"?, "usuario"?, "cargo"?, "celular_modelo"?, "celular_numero"?, "activo"? }
+← 201 / 200 TecnicoAdmin
+```
+- Fuera de jornada: sin ubicación (igual que en /mapa-en-vivo).
+- PUT cambia solo los campos enviados. No hay borrado: se desactiva (`activo: false`, no puede entrar).
+- `usuario` vacío = el código. Ni el usuario ni el código pueden repetirse entre personas (tampoco
+  cruzados), porque el login acepta cualquiera de los dos.
+- `celular_numero` se guarda como `+591 7XXXXXXX` (acepta "712 45830", "59171245830"…).
+- Si la persona viene de Odoo (`odoo_employee_id`), nombre y cargo se cambian en Odoo → 400. El
+  usuario también, si es el de Odoo (`usuario_de_odoo: true`); si fue generado, se puede cambiar.
 
-### POST /tecnicos/importar-odoo
-Importa empleados desde Odoo (nombre, código, cargo).
+### GET /odoo/empleados  ·  POST /tecnicos/importar-odoo
+Empleados activos de Odoo para elegir a quién importar, e importación de los elegidos.
 ```
-← { "importados": 3, "nombres": ["Kevin Apaza", "Ever Choque", "Marcelo Flores"] }
+GET /odoo/empleados
+← { "empleados": [ { "odoo_id": 71, "nombre": "DAVID HUAJLLIRE LAIME", "cargo": "Instalador Mecánico",
+                     "departamento": "MANTENIMIENTO", "empresa": "JALMECO LTDA",
+                     "usuario_odoo": null,          // login de Odoo, si tiene
+                     "tecnico_id": null }, … ] }    // ya importado → id en Jalmeco GPS
+POST /tecnicos/importar-odoo  → { "odoo_ids": [71, 73] }      (1–300)
+← { "importados": 2, "actualizados": 0, "vinculados": 0, "nombres": ["DAVID HUAJLLIRE LAIME", …] }
 ```
+- Nombre completo (nombres + apellidos), cargo y usuario de Odoo; sin usuario en Odoo →
+  `nombre.apellido` (sin repetir). Quedan "Sin PIN".
+- `vinculados`: ya estaban cargados a mano con el mismo nombre; se enlazan en vez de duplicarse.
+- Después trae sus asistencias recientes: quien ya marcó entrada aparece en jornada.
+- Si Odoo falla → 502 `ODOO_ERROR` con el motivo.
 
 ### POST /tecnicos/{id}/pin
 Genera o reinicia el PIN (se muestra una sola vez). Guarda `pin_generado_en`.
@@ -185,19 +230,30 @@ Genera o reinicia el PIN (se muestra una sola vez). Guarda `pin_generado_en`.
 ← { "pin": "292317", "generado_en": "…" }
 ```
 - En la lista/detalle: `tiene_pin` (false = "Sin PIN") y `pin_generado_en`.
+- PIN al azar sin patrones fáciles (111111, 123456…). Al reiniciarlo, las sesiones abiertas con el
+  PIN anterior dejan de valer: la app recibe 401 `SESION_REVOCADA` y vuelve al login.
 
 ### GET /tecnicos/{id}/recorrido?fecha=YYYY-MM-DD
-El recorrido del día (puntos + paradas + resumen) — para el mapa y la línea de tiempo.
+El recorrido de un día (por defecto hoy, hora de La Paz) — mapa, línea de tiempo y reproducción.
 ```
 ← {
-    "jornada": { "inicio": "…08:02…", "fin": "…16:42…", "estado": "cerrada" },
-    "resumen": { "en_campo_min": 482, "paradas": 2, "distancia_km": 14.8 },   // en_sucursal: Fase 2
-    "puntos":  [ { "lat": …, "lng": …, "hora": "…" }, … ],
-    "paradas": [ { "lat": …, "lng": …, "inicio": "…", "fin": "…", "duracion_min": 14,
-                   "direccion": "Calle Rosendo Gutiérrez" }, … ],
+    "fecha": "2026-11-11",
+    "jornadas": [ { "id": 6, "inicio": "…", "fin": "…" | null, "estado": "cerrada",
+                    "cierre_automatico": false }, … ],   // true = no marcó salida
+    "resumen": { "en_jornada_min": 482, "en_paradas_min": 95, "paradas": 2, "distancia_km": 14.8,
+                 "puntos": 412 },
+    "puntos":  [ { "lat": …, "lng": …, "hora": "…", "velocidad": 28.4, "bateria": 81 }, … ],
+    "paradas": [ { "lat": …, "lng": …, "inicio": "…", "fin": "…", "duracion_min": 14 }, … ],
     "pausas":  [ { "nombre": "Almuerzo", "inicio": "…12:00…", "fin": "…13:00…" } ]
   }
 ```
+- `jornadas` es una lista: puede marcar entrada y salida más de una vez en el día.
+- Las paradas se calculan al consultar: puntos seguidos a ≤ 100 m durante ≥ 5 min.
+- Se descartan lecturas falsas del GPS (precisión peor que 100 m, "picos" que se alejan y
+  vuelven, saltos de más de 180 km/h, duplicados). Un hueco de más de 20 min sin puntos corta el
+  trayecto: no se dibuja ni se suma distancia a través de él (p. ej. el almuerzo).
+- La distancia no cuenta el "temblor" del GPS dentro de las paradas.
+- `en_jornada_min` descuenta las pausas. Dirección de las paradas y "en sucursal": Fase 2.
 
 ### GET /tecnicos/{id}/historial
 Lista de jornadas pasadas con resumen (fecha, horas en campo, distancia…).
@@ -211,39 +267,99 @@ Verificaciones de huella del día.
 ```
 
 ### GET /alertas
-Bandeja de alertas con filtros.
+Bandeja de alertas con filtros (por defecto, los últimos 7 días; máx. 500).
 ```
-GET /alertas?estado=nueva&tipo=sin_conexion&desde=…&hasta=…
-← { "alertas": [
-     { "id": 5, "tecnico": TecnicoResumen, "tipo": "sin_conexion",
-       "mensaje": "Sin señal desde hace 15 min · última ubicación Cota Cota",
-       "nivel": "advertencia", "creada_en": "…16:30…", "estado": "nueva" }, … ] }
+GET /alertas?estado=nueva&tipo=sin_conexion&tecnico=12&desde=AAAA-MM-DD&hasta=AAAA-MM-DD
+← { "desde": "2026-11-05", "hasta": "2026-11-11", "limitado": false,
+    "conteo": { "todas": 23, "nuevas": 10, "atendidas": 13 },   // sin aplicar `estado` (pestañas)
+    "alertas": [
+     { "id": 5, "tecnico": { "id": 12, "nombre": "…", "codigo": "JAL-1047", "cargo": "…",
+                             "celular_numero": "+591 …", "en_jornada": true },
+       "tipo": "sin_conexion", "mensaje": "Sin datos del celular desde las 16:15.",
+       "nivel": "advertencia", "creada_en": "…", "estado": "nueva",
+       "atendida_por": null, "atendida_en": null }, … ] }
 ```
+- Sin ubicación del técnico (el botón 📍 abre `/mapa?tecnico=12` si `en_jornada`).
 
 Tipos: `sin_conexion`, `bateria_baja`, `verificacion_no_realizada`, `cambio_equipo`,
-`seguimiento_detenido`. En el MVP el aviso al admin es por **correo** (SMS/WhatsApp: Fase 2).
+`seguimiento_detenido`, `salida_no_marcada`. `sin_conexion`, `bateria_baja` y `salida_no_marcada`
+las crea el worker (sin conexión: una por cada corte, sin contar el almuerzo; batería baja: una por
+jornada; salida no marcada: al cerrar sola una jornada abierta pasado el fin del horario + 2 h). En el MVP el aviso al admin es por **correo** (SMS/WhatsApp: Fase 2).
+
+### POST /alertas/correo-prueba
+Envía un correo de prueba a quienes reciben las alertas (máx. 5 por hora).
+```
+← { "ok": true, "destinatarios": ["carla@jalmeco.com.bo"] }
+← { "ok": false, "mensaje": "Falta configurar EMAIL_* en backend/.env." | "No se pudo enviar: …" }
+```
+
+### GET /alertas/resumen
+Para la campana y el menú (el panel lo consulta cada 30 s): todas las nuevas, de cualquier fecha.
+```
+← { "nuevas": 8, "criticas": 2, "ultimas": [ Alerta, … ] }   // las 5 más recientes
+```
 
 ### POST /alertas/{id}/atender  ·  POST /alertas/atender-todas
-Marca una (o todas) como atendidas.
+Marca una como atendida (← la alerta) o varias: `{ "ids": [1, 2] }`; sin `ids`, todas las nuevas
+(← `{ "atendidas": 2 }`). Guarda quién y cuándo.
 
 ### GET /config  ·  PUT /config
-Configuración: horario laboral, almuerzo, retención (meses), verificación (por día, límite min),
-captura GPS (`gps_distancia_m`, `gps_intervalo_seg`) y Odoo (`odoo_sync_min`: 1 o 2 min).
+Configuración del sistema (pantalla Configuración). `PUT` acepta solo los campos que cambian.
+```
+← { "horario_inicio": "08:00", "horario_fin": "18:00",
+    "almuerzo": { "inicio": "12:00", "fin": "13:00" },   // franja de pausa "Almuerzo"
+    "verificaciones_por_dia": 2,      // 1–4
+    "verificacion_limite_min": 3,     // 1–15
+    "gps_distancia_m": 25,            // 5–500
+    "gps_intervalo_seg": 120,         // 30–900
+    "sin_conexion_min": 30,           // 3–120
+    "bateria_baja_pct": 15,           // 5–50
+    "alertas_correos": "a@x.com, b@x.com",   // vacío = administradores activos
+    "alertas_destinatarios": ["a@x.com", "b@x.com"],   // solo lectura: a quién llegan hoy
+    "correo_activo": false,           // solo lectura: hay SMTP en backend/.env
+    "retencion_meses": 12,            // 1–36
+    "odoo_sync_min": 2,               // 1 o 2
+    "espejo_odoo_min": 8 }            // 5–60
+```
+- El horario debe terminar después de empezar y el almuerzo quedar dentro de él. El almuerzo no
+  se puede quitar (privacidad). Los correos se aceptan separados por coma, punto y coma o líneas
+  y se guardan normalizados (máx. 10).
 
-### GET /odoo/estado  ·  POST /odoo/sincronizar
-Estado de la integración y disparar una sincronización manual.
+### GET /odoo/estado  ·  POST /odoo/probar
+Estado de la integración (nunca devuelve la clave API) y prueba de conexión (solo lectura).
 ```
-← { "ultima_sync_ok": "…16:31…",          // "Última sincronización: hace 1 min"
+← { "url": "https://jalmeco.odoo.com", "db": "…", "usuario": null,
+    "faltan": ["ODOO_USUARIO", "ODOO_API_KEY"],   // variables vacías en backend/.env
+    "ultima_sync_ok": "…16:31…",
     "historial": [
-      { "fecha": "…16:30…", "tipo": "asistencia", "resultado": "ok", "registros": 2 },
-      { "fecha": "…15:45…", "tipo": "asistencia", "resultado": "error",
-        "mensaje": "Tiempo de espera agotado, reintentado" } ] }
+      { "id": 1, "fecha": "…16:30…", "tipo": "asistencia", "resultado": "ok", "registros": 2, "mensaje": null },
+      { "id": 2, "fecha": "…15:45…", "tipo": "asistencia", "resultado": "error", "registros": 0,
+        "mensaje": "Tiempo de espera agotado" } ] }     // las últimas 20
+
+POST /odoo/probar  ← { "ok": true, "version": "17.0+e", "mensaje": "Conectado como …" }
+                   ← { "ok": false, "mensaje": "Usuario o clave API incorrectos…" }
 ```
+
+### POST /odoo/sincronizar
+Trae ya la asistencia y los datos del personal importado (sin esperar al worker).
+```
+← { "ok": true, "jornadas": 3, "empleados": 0 }      // cuántas cambiaron
+← { "ok": false, "mensaje": "…" }
+```
+- Si Odoo se cae, el historial guarda el error una vez por hora (no una fila por minuto).
 - El historial solo guarda corridas **con registros** o **con error**; las vacías solo pisan
-  `ultima_sync_ok`.
+  `ultima_sync_ok`. La sincronización manual llegará con la sincronización del worker.
 
 ### GET /mi-cuenta  ·  PUT /mi-cuenta  ·  POST /mi-cuenta/password
-Datos del administrador y cambio de contraseña.
+```
+GET/PUT /mi-cuenta  → { nombre?, email?, password_actual? }   ← { "id": 1, "nombre": "…", "email": "…" }
+   (cambiar el email exige password_actual → 400 si falta o no es correcta; máx. 10 intentos por hora)
+POST /mi-cuenta/password  → { "actual": "…", "nueva": "…" }   ← { "access": "…", "refresh": "…" }
+```
+- La nueva contraseña pasa los validadores de Django (8+ caracteres, no común, no solo números,
+  no parecida al correo). Máx. 10 intentos por hora.
+- Al cambiarla, los tokens emitidos antes dejan de valer (401 `SESION_REVOCADA`) en todos los
+  equipos; la respuesta trae tokens nuevos para seguir en el actual.
 
 ---
 

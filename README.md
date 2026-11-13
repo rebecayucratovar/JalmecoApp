@@ -50,7 +50,7 @@ code .        # abrir en VS Code (opcional)
 # Crear el archivo de variables de entorno a partir del ejemplo
 cp backend/.env.example backend/.env        # PowerShell: Copy-Item backend\.env.example backend\.env
 
-# Levantar base de datos + backend
+# Levantar base de datos + backend + worker (tareas periódicas)
 docker compose up --build
 
 # En otra terminal: migraciones y superusuario
@@ -61,13 +61,16 @@ docker compose exec backend python manage.py createsuperuser
 - API: http://localhost:8000
 - Admin de Django: http://localhost:8000/admin
 - PostgreSQL/PostGIS: `localhost:5432`
+- Worker: `docker compose logs -f worker` (solo registra cuando hace algo).
+  Probar una vuelta: `docker compose exec backend python manage.py worker --una-vez`
+- Pruebas: `docker compose exec backend python manage.py test`
 
 > Los valores por defecto de `docker-compose.yml` para la base de datos (`jalmeco` / `jalmeco` / `jalmeco`)
 > coinciden con `.env.example`. Si los cambias en `backend/.env`, exporta también `DB_NAME`, `DB_USER`
 > y `DB_PASSWORD` en tu terminal o ejecuta `docker compose --env-file backend/.env up`.
 
 Variables de entorno (`backend/.env`): `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `DB_NAME`, `DB_USER`,
-`DB_PASSWORD`, `DB_HOST`, `DB_PORT`. **Nunca subas `.env` al repositorio**, solo `.env.example`.
+`DB_PASSWORD`, `DB_HOST`, `DB_PORT` `ODOO_*` y `EMAIL_*` (ver `.env.example`). **Nunca subas `.env` al repositorio**, solo `.env.example`.
 
 ### Entorno virtual local (opcional, para el editor)
 
@@ -89,7 +92,7 @@ npm install
 npm run dev
 ```
 
-Abre http://localhost:5173
+Abre http://localhost:5173 (con el backend levantado). Detalles en [web-admin/README.md](web-admin/README.md).
 
 ## 3. Mobile (Flutter, Android)
 

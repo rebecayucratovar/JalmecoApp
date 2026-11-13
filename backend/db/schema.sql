@@ -19,7 +19,8 @@ CREATE TABLE administrador (
     email          VARCHAR(160)  NOT NULL UNIQUE,
     password_hash  VARCHAR(255)  NOT NULL,
     activo         BOOLEAN       NOT NULL DEFAULT TRUE,
-    creado_en      TIMESTAMPTZ   NOT NULL DEFAULT now()
+    creado_en      TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    password_cambiado_en TIMESTAMPTZ           -- sesiones anteriores dejan de valer
 );
 
 -- ---------------------------------------------------------------------
@@ -37,14 +38,16 @@ CREATE TABLE tecnico (
     equipo_id            VARCHAR(64),                 -- equipo DETECTADO por la app (Android ID)
     equipo_modelo        VARCHAR(80),                 -- ej. "samsung SM-A155F"
     equipo_registrado_en TIMESTAMPTZ,                 -- si cambia → alerta cambio_equipo
-    usuario              VARCHAR(40)  NOT NULL UNIQUE, -- login (usuario de Odoo o código JAL-XXXX)
+    usuario              VARCHAR(120) NOT NULL UNIQUE, -- login (usuario de Odoo, nombre.apellido o JAL-XXXX)
+    usuario_de_odoo      BOOLEAN      NOT NULL DEFAULT FALSE, -- el usuario vino de Odoo (no se edita aquí)
     pin_hash             VARCHAR(255),                -- PIN de 6 dígitos cifrado (NULL = "Sin PIN")
     pin_generado_en      TIMESTAMPTZ,
     activo               BOOLEAN      NOT NULL DEFAULT TRUE,
     -- Último estado (denormalizado, para que el mapa en vivo cargue rápido)
     estado_actual        VARCHAR(20)  NOT NULL DEFAULT 'fuera_jornada'
                          CHECK (estado_actual IN
-                           ('fuera_jornada','en_trayecto','en_parada','sin_conexion')),
+                           ('fuera_jornada','en_trayecto','en_parada','sin_conexion',
+                            'ubicacion_apagada')),
     ultima_lat           DOUBLE PRECISION,
     ultima_lng           DOUBLE PRECISION,
     ultima_bateria       SMALLINT     CHECK (ultima_bateria BETWEEN 0 AND 100),
@@ -104,7 +107,8 @@ CREATE TABLE alerta (
     tecnico_id    INT          NOT NULL REFERENCES tecnico(id) ON DELETE CASCADE,
     tipo          VARCHAR(30)  NOT NULL
                   CHECK (tipo IN ('sin_conexion','bateria_baja','verificacion_no_realizada',
-                                  'cambio_equipo','seguimiento_detenido')),
+                                  'cambio_equipo','seguimiento_detenido',
+                                  'salida_no_marcada')),
     mensaje       TEXT,
     nivel         VARCHAR(12)  NOT NULL DEFAULT 'advertencia'
                   CHECK (nivel IN ('info','advertencia','critico')),
@@ -112,7 +116,8 @@ CREATE TABLE alerta (
     estado        VARCHAR(10)  NOT NULL DEFAULT 'nueva'
                   CHECK (estado IN ('nueva','atendida')),
     atendida_por  INT          REFERENCES administrador(id) ON DELETE SET NULL,
-    atendida_en   TIMESTAMPTZ
+    atendida_en   TIMESTAMPTZ,
+    notificada_en TIMESTAMPTZ                -- aviso por correo (NULL = falta enviar)
 );
 
 -- ---------------------------------------------------------------------
@@ -157,6 +162,11 @@ CREATE TABLE configuracion (
                              CHECK (gps_distancia_m BETWEEN 5 AND 500),
     gps_intervalo_seg        INT NOT NULL DEFAULT 120   -- …o cada N segundos si está quieto
                              CHECK (gps_intervalo_seg BETWEEN 30 AND 900),
+    sin_conexion_min         INT NOT NULL DEFAULT 30    -- alerta si no llegan datos en N min
+                             CHECK (sin_conexion_min BETWEEN 3 AND 120),
+    bateria_baja_pct         INT NOT NULL DEFAULT 15    -- alerta al bajar de N % (1 por jornada)
+                             CHECK (bateria_baja_pct BETWEEN 5 AND 50),
+    alertas_correos          TEXT NOT NULL DEFAULT '',  -- destinatarios (coma); vacío = admins activos
     odoo_ultima_sync_ok      TIMESTAMPTZ                -- última sincronización correcta (se pisa)
 );
 

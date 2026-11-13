@@ -1,122 +1,92 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
+import { Loader2Icon } from 'lucide-react'
+import { createBrowserRouter, RouterProvider } from 'react-router'
 
-function App() {
-  const [count, setCount] = useState(0)
+import { Marco } from '@/components/marco/Marco'
+import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { Api, ApiError } from '@/lib/api'
+import { AlmacenObservable, ProveedorSesion } from '@/lib/sesion'
+import { ProveedorTema } from '@/lib/tema'
+import { LoginPagina } from '@/paginas/LoginPagina'
+import { NoEncontrada, Proximamente } from '@/paginas/Proximamente'
+import { SECCIONES } from '@/secciones'
 
+// Pantallas pesadas (p. ej. el mapa con Leaflet) se cargan recién al abrirlas
+const InicioPagina = lazy(() => import('@/paginas/inicio/InicioPagina'))
+const MapaPagina = lazy(() => import('@/paginas/mapa/MapaPagina'))
+const TecnicosPagina = lazy(() => import('@/paginas/tecnicos/TecnicosPagina'))
+const TecnicoPagina = lazy(() => import('@/paginas/tecnicos/TecnicoPagina'))
+const AlertasPagina = lazy(() => import('@/paginas/alertas/AlertasPagina'))
+const ConfiguracionPagina = lazy(() => import('@/paginas/configuracion/ConfiguracionPagina'))
+
+function Cargando() {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    <div className="flex h-full items-center justify-center text-muted-foreground">
+      <Loader2Icon className="size-5 animate-spin" aria-label="Cargando" />
+    </div>
   )
 }
 
-export default App
+const diferida = (pantalla: ReactNode) => <Suspense fallback={<Cargando />}>{pantalla}</Suspense>
+
+/** Secciones ya construidas (las demás muestran "en construcción"). */
+const PANTALLAS: Record<string, ReactNode> = {
+  '/': diferida(<InicioPagina />),
+  '/mapa': diferida(<MapaPagina />),
+  '/tecnicos': diferida(<TecnicosPagina />),
+  '/alertas': diferida(<AlertasPagina />),
+  '/configuracion': diferida(<ConfiguracionPagina />),
+}
+
+const router = createBrowserRouter([
+  { path: '/login', element: <LoginPagina /> },
+  {
+    element: <Marco />,
+    children: [
+      // Cada sección reemplaza su <Proximamente /> al construirse
+      ...SECCIONES.map((s) => ({ path: s.ruta, element: PANTALLAS[s.ruta] ?? <Proximamente /> })),
+      { path: '/tecnicos/:id', element: diferida(<TecnicoPagina />) },
+      { path: '*', element: <NoEncontrada /> },
+    ],
+  },
+])
+
+function crearClienteConsultas() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        // Reintentar solo errores de red o del servidor (no 4xx: no cambiarían al repetir)
+        retry: (intentos, error) =>
+          intentos < 2 && !(error instanceof ApiError && error.status >= 400 && error.status < 500),
+        staleTime: 5_000,
+      },
+    },
+  })
+}
+
+export default function App() {
+  const [almacen] = useState(() => new AlmacenObservable())
+  // En producción la API está en otro dominio (VITE_API_URL al compilar); en desarrollo, el proxy de Vite
+  const [api] = useState(() => new Api(almacen, { base: import.meta.env.VITE_API_URL || undefined }))
+  const [consultas] = useState(crearClienteConsultas)
+
+  // Al cerrar sesión (o expirar) se borran los datos en memoria del administrador anterior
+  useEffect(() => almacen.suscribir(() => {
+    if (!almacen.leer()) consultas.clear()
+  }), [almacen, consultas])
+
+  return (
+    <ProveedorTema>
+      <ProveedorSesion almacen={almacen} api={api}>
+        <QueryClientProvider client={consultas}>
+          <TooltipProvider delayDuration={300}>
+            <RouterProvider router={router} />
+            <Toaster position="top-right" />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ProveedorSesion>
+    </ProveedorTema>
+  )
+}

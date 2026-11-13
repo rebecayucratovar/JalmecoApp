@@ -7,6 +7,7 @@ from core.models import Configuracion
 from core.pausas import en_franja, franja_almuerzo, franjas_activas
 from ubicaciones.consultas import distancia_km
 from usuarios.permisos import EsTecnico
+from verificaciones import servicios as verificaciones
 from verificaciones.models import Verificacion
 
 from .models import Jornada
@@ -36,6 +37,7 @@ class MiEstadoView(APIView):
         franjas = franjas_activas()
         almuerzo = franja_almuerzo(franjas)
         config = Configuracion.actual()
+        verificaciones.cerrar_vencidas(tecnico=tecnico)  # por si el worker aún no pasó
         ultima_verif = Verificacion.objects.filter(tecnico=tecnico).order_by('-solicitada_en').first()
 
         datos = MiEstadoSerializer({
@@ -50,6 +52,12 @@ class MiEstadoView(APIView):
             },
             # Cómo debe capturar la app (configurable en el panel)
             'rastreo': {'distancia_m': config.gps_distancia_m, 'intervalo_seg': config.gps_intervalo_seg},
-            'ultima_verificacion': ultima_verif,
+            'ultima_verificacion': {
+                'id': ultima_verif.pk,
+                'segundos_restantes': verificaciones.segundos_restantes(ultima_verif, ahora),
+                'solicitada_en': ultima_verif.solicitada_en,
+                'respondida_en': ultima_verif.respondida_en,
+                'resultado': ultima_verif.resultado,
+            } if ultima_verif else None,
         })
         return Response(datos.data)

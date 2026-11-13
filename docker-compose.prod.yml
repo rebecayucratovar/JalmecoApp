@@ -1,0 +1,94 @@
+# Producción (VPS de Hostinger). No usar en desarrollo.
+#
+#   ./deploy/deploy.sh          (baja los cambios y levanta todo; ver docs/despliegue.md)
+#
+# Diferencias con docker-compose.yml (desarrollo):
+# - La base de datos NO publica puertos: solo la ven el backend y el worker.
+# - El backend corre con gunicorn (no runserver) y sin montar el código: usa la imagen construida.
+# - Caddy recibe el tráfico (80/443), saca y renueva solo el certificado HTTPS y pasa a la API.
+# - Las variables salen de backend/.env (también las de la base: --env-file backend/.env).
+
+x-registros: &registros
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }  # que los logs no llenen el disco
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:?Falta DB_NAME en backend/.env}
+      POSTGRES_USER: ${DB_USER:?Falta DB_USER en backend/.env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en backend/.env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    <<: *registros
+
+  backend:
+    build: ./backend
+    restart: always
+    env_file: ./backend/.env
+    environment:
+      DB_HOST: db
+      DEBUG: "False"
+    # Al arrancar: migraciones + archivos del /admin, y luego la API
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60
+             --access-logfile - --forwarded-allow-ips='*'"
+    volumes:
+      - static_data:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+    <<: *registros
+
+  # Un solo worker: las tareas no están pensadas para correr en paralelo
+  worker:
+    build: ./backend
+    restart: always
+    # Espera a que el backend aplique las migraciones (en la primera instalación las tablas no existen)
+    command: >
+      sh -c "until python manage.py migrate --check >/dev/null 2>&1; do echo 'Esperando migraciones…'; sleep 3; done;
+             exec python manage.py worker"
+    env_file: ./backend/.env
+    environment:
+      DB_HOST: db
+      DEBUG: "False"
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    <<: *registros
+
+  caddy:
+    image: caddy:2.8.4-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?Falta API_DOMAIN en backend/.env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - static_data:/srv/static:ro
+      - caddy_data:/data  # certificados: no borrar
+      - caddy_config:/config
+    depends_on:
+      - backend
+    <<: *registros
+
+volumes:
+  postgres_data:
+  static_data:
+  caddy_data:
+  caddy_config:

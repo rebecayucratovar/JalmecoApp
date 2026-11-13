@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from usuarios.serializers import TecnicoResumenSerializer
+from usuarios.serializers import TecnicoEnVivoSerializer
 
 MAX_PUNTOS_POR_LOTE = 1000
 
@@ -31,4 +31,4 @@ class RespuestaUbicacionesSerializer(serializers.Serializer):
 
 class MapaEnVivoSerializer(serializers.Serializer):
     actualizado_en = serializers.DateTimeField()
-    tecnicos = TecnicoResumenSerializer(many=True)
+    tecnicos = TecnicoEnVivoSerializer(many=True)

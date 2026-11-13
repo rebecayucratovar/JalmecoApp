@@ -1,18 +1,22 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.contrib.gis.geos import Point
 from django.db import transaction
-from django.db.models import Exists, OuterRef, Q
+from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.pausas import en_franja, franjas_activas
 from jornadas.models import Jornada
+from usuarios.consultas import con_jornada
 from usuarios.models import Tecnico
 from usuarios.permisos import EsAdmin, EsTecnico
 
 from .models import Ubicacion
+from .recorrido import recorrido_del_dia
 from .serializers import (
     LoteUbicacionesSerializer, MapaEnVivoSerializer, PuntoSerializer, RespuestaUbicacionesSerializer,
 )
@@ -120,12 +124,32 @@ class MisUbicacionesView(APIView):
 
 
 class MapaEnVivoView(APIView):
-    """GET /api/v1/mapa-en-vivo — técnicos con jornada activa y su última posición."""
+    """
+    GET /api/v1/mapa-en-vivo — todo el personal activo. Los que están en jornada vienen con su
+    última posición; los que no, como "fuera_jornada" y SIN ubicación (privacidad).
+    """
 
     permission_classes = [EsAdmin]
 
     def get(self, request):
-        jornada_activa = Jornada.objects.filter(tecnico=OuterRef('pk'), estado=Jornada.Estado.ACTIVA)
-        tecnicos = Tecnico.objects.filter(Exists(jornada_activa), activo=True).order_by('nombre')
+        tecnicos = con_jornada(Tecnico.objects.filter(activo=True)).order_by('nombre')
         datos = MapaEnVivoSerializer({'actualizado_en': timezone.now(), 'tecnicos': tecnicos})
         return Response(datos.data)
+
+
+class RecorridoView(APIView):
+    """GET /api/v1/tecnicos/{id}/recorrido?fecha=YYYY-MM-DD (por defecto, hoy en La Paz)."""
+
+    permission_classes = [EsAdmin]
+
+    def get(self, request, pk):
+        tecnico = get_object_or_404(Tecnico, pk=pk)
+        texto = request.query_params.get('fecha')
+        if texto:
+            try:
+                fecha = date.fromisoformat(texto)
+            except ValueError:
+                raise ValidationError({'fecha': 'Usa el formato AAAA-MM-DD.'})
+        else:
+            fecha = timezone.localdate()
+        return Response(recorrido_del_dia(tecnico, fecha))

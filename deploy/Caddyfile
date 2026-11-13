@@ -1,0 +1,20 @@
+# API de Jalmeco GPS. Caddy saca y renueva solo el certificado HTTPS (Let's Encrypt) para
+# API_DOMAIN, siempre que el registro DNS ya apunte a la IP del VPS.
+{$API_DOMAIN} {
+	encode gzip
+
+	# Archivos del /admin de Django (collectstatic)
+	handle_path /static/* {
+		root * /srv/static
+		file_server
+	}
+
+	reverse_proxy backend:8000
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+}
