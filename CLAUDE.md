@@ -98,7 +98,8 @@ alerta; si luego llega otro `equipo_id` → alerta `cambio_equipo`. Sin IMEI (An
   el almuerzo NO usa el GPS: solo consulta `mi/estado` (cada 2 min) con notificación "Fuera de
   jornada · No se registra tu ubicación". En jornada consulta cada 1 min y envía la cola cada 1 min.
 - **Seguimiento detenido:** si cierra sesión, quita el permiso o apaga el GPS en jornada, la
-  app avisa (`mi/seguimiento-detenido`) → alerta al admin.
+  app avisa (`mi/seguimiento-detenido`) → alerta crítica al admin. Fuera de jornada, cerrar sesión o
+  quitar el permiso también avisa (advertencia: no se registrará su próxima jornada); apagar el GPS no.
 - **Salida no marcada:** si la jornada sigue abierta al fin del horario + 2 h (o 4 h después de
   una entrada fuera de horario), el worker la cierra (al fin del horario o al último punto GPS),
   marca `cierre_automatico` y crea la alerta `salida_no_marcada`. La sincronización con Odoo no

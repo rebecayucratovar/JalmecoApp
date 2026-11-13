@@ -25,7 +25,7 @@ Future<void> main() async {
 
   final permisos = Permisos(FuentePermisosAndroid())
     // Si quita la ubicación "todo el tiempo" en Ajustes → aviso al supervisor
-    // (el backend solo crea la alerta si hay jornada activa).
+    // (en jornada es crítica; fuera de jornada, advertencia: no se registrará la próxima).
     ..alPerderUbicacion = () {
       if (!sesion.activa) return;
       api.post('mi/seguimiento-detenido', {'motivo': 'permiso_revocado'}).catchError((_) => null);

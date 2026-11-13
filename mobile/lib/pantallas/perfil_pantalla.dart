@@ -139,7 +139,8 @@ Future<void> _confirmarCierre(BuildContext context, Api api) async {
   );
   if (confirmar != true) return;
   try {
-    // Avisar ANTES de borrar el token (el backend solo alerta si hay jornada activa)
+    // Avisar ANTES de borrar el token (en jornada: alerta crítica; fuera: advertencia,
+    // porque sin sesión no se registrará su próxima jornada)
     await api.post('mi/seguimiento-detenido', {'motivo': 'cerro_sesion'});
   } on ApiError catch (_) {
     // Sin conexión: igual se cierra; el panel lo verá como "Sin conexión".

@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -142,10 +144,18 @@ class MiDispositivoView(APIView):
 class MiSeguimientoDetenidoView(APIView):
     """
     POST /api/v1/mi/seguimiento-detenido { motivo } — la app avisa que dejará de rastrear
-    (cerrar sesión, quitar permiso, apagar GPS). Solo genera alerta si hay jornada activa.
+    (cerrar sesión, quitar permiso, apagar GPS).
+
+    - En jornada: alerta CRÍTICA (se dejó de rastrear en pleno trabajo).
+    - Fuera de jornada, cerrar sesión o quitar el permiso: alerta de ADVERTENCIA, porque la app no
+      podrá registrar la PRÓXIMA jornada hasta que vuelva a entrar / dar el permiso (Android no deja
+      que una app cerrada arranque sola al marcar la entrada). Una por motivo cada 12 h.
+    - Fuera de jornada, apagar el GPS: sin alerta (es normal apagarlo al salir del trabajo; si sigue
+      apagado al marcar la entrada, la app avisa entonces y es crítica).
     """
 
     permission_classes = [EsTecnico]
+    REPETIR_FUERA_DE_JORNADA = timedelta(hours=12)
 
     def post(self, request):
         from jornadas.models import Jornada
@@ -153,10 +163,25 @@ class MiSeguimientoDetenidoView(APIView):
         datos = SeguimientoDetenidoSerializer(data=request.data)
         datos.is_valid(raise_exception=True)
         tecnico = request.user
+        motivo = datos.validated_data['motivo']
+        texto = MOTIVOS_SEGUIMIENTO[motivo]
         en_jornada = Jornada.objects.filter(tecnico=tecnico, estado=Jornada.Estado.ACTIVA).exists()
+
+        creada = False
         if en_jornada:
-            Alerta.objects.create(
-                tecnico=tecnico, tipo=Alerta.Tipo.SEGUIMIENTO_DETENIDO, nivel=Alerta.Nivel.CRITICO,
-                mensaje=f'{MOTIVOS_SEGUIMIENTO[datos.validated_data["motivo"]]}.',
-            )
-        return Response(SeguimientoDetenidoRespuestaSerializer({'ok': True, 'alerta_creada': en_jornada}).data)
+            Alerta.objects.create(tecnico=tecnico, tipo=Alerta.Tipo.SEGUIMIENTO_DETENIDO,
+                                  nivel=Alerta.Nivel.CRITICO, mensaje=f'{texto}.')
+            creada = True
+        elif motivo != 'gps_apagado':
+            mensaje = (f'{texto} fuera de jornada. Mientras no vuelva a '
+                       f'{"entrar a la app" if motivo == "cerro_sesion" else "dar el permiso de ubicación"}, '
+                       'no se registrará su próxima jornada.')
+            repetida = Alerta.objects.filter(
+                tecnico=tecnico, tipo=Alerta.Tipo.SEGUIMIENTO_DETENIDO, mensaje=mensaje,
+                estado=Alerta.Estado.NUEVA, creada_en__gte=timezone.now() - self.REPETIR_FUERA_DE_JORNADA,
+            ).exists()
+            if not repetida:
+                Alerta.objects.create(tecnico=tecnico, tipo=Alerta.Tipo.SEGUIMIENTO_DETENIDO,
+                                      nivel=Alerta.Nivel.ADVERTENCIA, mensaje=mensaje)
+                creada = True
+        return Response(SeguimientoDetenidoRespuestaSerializer({'ok': True, 'alerta_creada': creada}).data)

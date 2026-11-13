@@ -127,8 +127,10 @@ La app avisa que va a dejar de rastrear. Solo crea alerta si hay jornada activa.
 → { "motivo": "cerro_sesion" }   // cerro_sesion | permiso_revocado | gps_apagado
 ← { "ok": true, "alerta_creada": true }
 ```
-- Genera la alerta **`seguimiento_detenido`** (crítica). Al cerrar sesión, llamarlo **antes** de
-  borrar el token.
+- En jornada: alerta **`seguimiento_detenido`** crítica.
+- Fuera de jornada, `cerro_sesion` o `permiso_revocado`: la misma alerta como **advertencia** ("no se
+  registrará su próxima jornada"), una por motivo cada 12 h. `gps_apagado` fuera de jornada: sin alerta.
+- Al cerrar sesión, llamarlo **antes** de borrar el token.
 
 ### GET /mi/verificacion-pendiente
 ¿Hay una verificación de huella vigente? (la app también la recibe por notificación).
