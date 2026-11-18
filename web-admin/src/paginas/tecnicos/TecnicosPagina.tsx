@@ -1,4 +1,4 @@
-import { DownloadIcon, EyeIcon, Loader2Icon, MapPinIcon, PlusIcon, SearchIcon, TriangleAlertIcon } from 'lucide-react'
+import { DownloadIcon, EyeIcon, Loader2Icon, MapPinIcon, SearchIcon, TriangleAlertIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 
@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils'
 
 import { contarVistas, filtrarTecnicos, formatoCelular, useTecnicos, type TecnicoAdmin, type Vista } from './datos'
 import { DialogoImportarOdoo } from './DialogoImportarOdoo'
-import { FormularioTecnico } from './FormularioTecnico'
 
 const VISTAS: { valor: Vista; etiqueta: string }[] = [
   { valor: 'activos', etiqueta: 'Activos' },
@@ -30,7 +29,6 @@ export default function TecnicosPagina() {
   // Se puede abrir en una vista (p. ej. /tecnicos?vista=sin_pin desde Inicio)
   const [params] = useSearchParams()
   const [vista, setVista] = useState<Vista>(() => VISTAS.find((v) => v.valor === params.get('vista'))?.valor ?? 'activos')
-  const [creando, setCreando] = useState(false)
   const [importando, setImportando] = useState(false)
 
   const todos = useMemo(() => consulta.data ?? [], [consulta.data])
@@ -48,14 +46,10 @@ export default function TecnicosPagina() {
               : 'Cargando…'}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setImportando(true)}>
-            <DownloadIcon /> Importar de Odoo
-          </Button>
-          <Button onClick={() => setCreando(true)}>
-            <PlusIcon /> Nuevo técnico
-          </Button>
-        </div>
+        {/* El personal se trae solo de Odoo: sin vínculo a Odoo no se abre la jornada (no se rastrearía) */}
+        <Button onClick={() => setImportando(true)}>
+          <DownloadIcon /> Importar de Odoo
+        </Button>
       </div>
 
       <div className="overflow-hidden rounded-xl border bg-card">
@@ -113,7 +107,7 @@ export default function TecnicosPagina() {
         ) : visibles.length === 0 ? (
           <p className="p-12 text-center text-sm text-muted-foreground">
             {todos.length === 0
-              ? 'Aún no hay personal. Tráelo con «Importar de Odoo» (o agrégalo con «Nuevo técnico»).'
+              ? 'Aún no hay personal. Tráelo con «Importar de Odoo».'
               : vista === 'sin_pin' && !busqueda && estado === 'todos'
                 ? 'Todo el personal activo tiene PIN.'
                 : 'Nadie coincide con la búsqueda o el filtro.'}
@@ -142,7 +136,6 @@ export default function TecnicosPagina() {
       </div>
 
       <DialogoImportarOdoo abierto={importando} alCambiar={setImportando} />
-      <FormularioTecnico abierto={creando} alCambiar={setCreando} alGuardar={(t) => navegar(`/tecnicos/${t.id}`)} />
     </div>
   )
 }
