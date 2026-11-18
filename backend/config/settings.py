@@ -122,9 +122,10 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    # En producción solo JSON: la página navegable de DRF (útil para probar) queda solo en desarrollo
     'DEFAULT_RENDERER_CLASSES': (
-        'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',
+        ('rest_framework.renderers.JSONRenderer', 'rest_framework.renderers.BrowsableAPIRenderer')
+        if DEBUG else ('rest_framework.renderers.JSONRenderer',)
     ),
     'EXCEPTION_HANDLER': 'config.excepciones.manejador_excepciones',
     # Límite de intentos de login/refresh (el PIN es de solo 6 dígitos). Ver usuarios/throttles.py
