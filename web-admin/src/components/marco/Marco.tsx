@@ -65,7 +65,7 @@ export function Marco() {
           onClick={() => setCajonAbierto(false)}
         />
         <div className={cn('absolute inset-y-0 left-0 transition-transform', cajonAbierto ? 'translate-x-0' : '-translate-x-full')}>
-          <MenuLateral contraido={false} alNavegar={() => setCajonAbierto(false)} />
+          <MenuLateral contraido={false} alCerrar={() => setCajonAbierto(false)} alNavegar={() => setCajonAbierto(false)} />
         </div>
       </div>
 

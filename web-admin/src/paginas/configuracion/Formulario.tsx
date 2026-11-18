@@ -113,7 +113,7 @@ export function CampoNumero({ id, etiqueta, valor, alCambiar, min, max, unidad, 
           value={Number.isNaN(valor) ? '' : valor}
           onChange={(e) => alCambiar(e.target.value === '' ? Number.NaN : Math.trunc(Number(e.target.value)))}
           aria-invalid={!!error || undefined}
-          className="h-9 pr-14 tabular-nums"
+          className="h-10 pr-14 tabular-nums"
         />
         <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">{unidad}</span>
       </div>
@@ -131,7 +131,7 @@ export function CampoHora({ id, etiqueta, valor, alCambiar, error }: {
   return (
     <Campo id={id} etiqueta={etiqueta} error={error}>
       <Input id={id} type="time" step={300} value={valor} onChange={(e) => alCambiar(e.target.value)}
-        aria-invalid={!!error || undefined} className="h-9 max-w-36 tabular-nums" />
+        aria-invalid={!!error || undefined} className="h-10 max-w-36 tabular-nums" />
     </Campo>
   )
 }

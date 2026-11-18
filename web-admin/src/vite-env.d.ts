@@ -5,6 +5,10 @@ interface ImportMetaEnv {
   readonly VITE_API_URL?: string
 }
 
+/** Versión del panel (package.json) y fecha de compilación dd/mm/aaaa: se muestran al pie del menú. */
+declare const __VERSION__: string
+declare const __FECHA_VERSION__: string
+
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }

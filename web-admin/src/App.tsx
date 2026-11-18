@@ -83,7 +83,7 @@ export default function App() {
         <QueryClientProvider client={consultas}>
           <TooltipProvider delayDuration={300}>
             <RouterProvider router={router} />
-            <Toaster position="top-right" />
+            <Toaster position="bottom-right" />
           </TooltipProvider>
         </QueryClientProvider>
       </ProveedorSesion>

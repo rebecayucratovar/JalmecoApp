@@ -115,7 +115,7 @@ export function SeccionHuella({ config }: Props) {
         <Campo id="verificaciones_por_dia" etiqueta="Verificaciones por día" error={b.errores.verificaciones_por_dia}
           ayuda="Por persona y por jornada. Siempre al menos 1.">
           <Select value={String(b.borrador.verificaciones_por_dia)} onValueChange={(v) => b.cambiar('verificaciones_por_dia', Number(v))}>
-            <SelectTrigger id="verificaciones_por_dia" className="h-9 w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger id="verificaciones_por_dia" className="h-10 w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               {[1, 2, 3, 4].map((n) => <SelectItem key={n} value={String(n)}>{n === 1 ? '1 vez al día' : `${n} veces al día`}</SelectItem>)}
             </SelectContent>
@@ -261,7 +261,7 @@ export function SeccionOdoo({ config }: Props) {
           <Campo id="odoo_sync_min" etiqueta="Leer la asistencia de Odoo cada" error={b.errores.odoo_sync_min}
             ayuda="Entradas y salidas que abren y cierran la jornada. Con más minutos se consulta menos a Odoo, pero el rastreo empieza y termina con ese retraso.">
             <Select value={String(b.borrador.odoo_sync_min)} onValueChange={(v) => b.cambiar('odoo_sync_min', Number(v))}>
-              <SelectTrigger id="odoo_sync_min" className="h-9 w-44"><SelectValue /></SelectTrigger>
+              <SelectTrigger id="odoo_sync_min" className="h-10 w-44"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="1">1 minuto</SelectItem>
                 <SelectItem value="2">2 minutos</SelectItem>

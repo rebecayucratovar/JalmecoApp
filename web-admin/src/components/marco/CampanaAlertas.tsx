@@ -44,8 +44,8 @@ export function CampanaAlertas() {
         <Button variant="ghost" size="icon" className="relative" aria-label={nuevas ? `Alertas: ${nuevas} nuevas` : 'Alertas'}>
           <BellIcon />
           {nuevas > 0 && (
-            <span className="absolute top-0.5 right-0.5 min-w-4 rounded-full bg-destructive px-1 text-center text-[10px] font-bold leading-4 text-white tabular-nums">
-              {nuevas > 99 ? '99+' : nuevas}
+            <span className="absolute top-0.5 right-0.5 min-w-4 rounded-full bg-red-600 px-1 text-center text-[10px] font-bold leading-4 text-white tabular-nums">
+              {nuevas > 9 ? '9+' : nuevas}
             </span>
           )}
         </Button>

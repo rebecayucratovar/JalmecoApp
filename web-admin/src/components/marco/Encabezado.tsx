@@ -60,9 +60,9 @@ export function Encabezado({ titulo, alAbrirMenu }: { titulo: string; alAbrirMen
             type="button"
             className="flex items-center gap-2.5 rounded-lg p-1 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <Avatar className="size-9">
-              <AvatarFallback className="bg-marino text-xs font-semibold text-white dark:bg-primary dark:text-primary-foreground">
-                {iniciales(admin?.nombre ?? '')}
+            <Avatar className="size-10">
+              <AvatarFallback className="bg-blue-700 text-base font-bold text-white">
+                {iniciales(admin?.nombre ?? '').charAt(0)}
               </AvatarFallback>
             </Avatar>
             <span className="hidden min-w-0 sm:block">

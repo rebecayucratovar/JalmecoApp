@@ -86,17 +86,17 @@ function DatosCuenta({ nombre: nombreInicial, email: emailInicial }: { nombre: s
     >
       <div className="grid gap-5 sm:grid-cols-2">
         <Campo id="cuenta_nombre" etiqueta="Nombre" error={errores.nombre}>
-          <Input id="cuenta_nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="name" className="h-9" />
+          <Input id="cuenta_nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="name" className="h-10" />
         </Campo>
         <Campo id="cuenta_email" etiqueta="Correo" error={errores.email}>
-          <Input id="cuenta_email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" spellCheck={false} className="h-9" />
+          <Input id="cuenta_email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" spellCheck={false} className="h-10" />
         </Campo>
       </div>
       {cambiaCorreo && (
         <Campo id="cuenta_password" etiqueta="Tu contraseña actual" error={errores.password_actual} className="sm:max-w-sm"
           ayuda="Para cambiar el correo con el que entras al panel.">
           <Input id="cuenta_password" type="password" value={clave} onChange={(e) => setClave(e.target.value)}
-            autoComplete="current-password" className="h-9" />
+            autoComplete="current-password" className="h-10" />
         </Campo>
       )}
     </Bloque>
@@ -146,15 +146,15 @@ function CambioPassword() {
       {/* Para que el gestor de contraseñas del navegador sepa de qué cuenta es */}
       <input type="text" name="username" autoComplete="username" value={admin?.email ?? ''} readOnly hidden />
       <Campo id="password_actual" etiqueta="Contraseña actual" error={errores.actual} className="sm:max-w-sm">
-        <Input id="password_actual" type={tipo} value={actual} onChange={(e) => setActual(e.target.value)} autoComplete="current-password" className="h-9" />
+        <Input id="password_actual" type={tipo} value={actual} onChange={(e) => setActual(e.target.value)} autoComplete="current-password" className="h-10" />
       </Campo>
       <div className="grid gap-5 sm:grid-cols-2">
         <Campo id="password_nueva" etiqueta="Nueva contraseña" error={errores.nueva}
           ayuda="Al menos 8 caracteres. Que no sea solo números ni una muy común.">
-          <Input id="password_nueva" type={tipo} value={nueva} onChange={(e) => setNueva(e.target.value)} autoComplete="new-password" className="h-9" />
+          <Input id="password_nueva" type={tipo} value={nueva} onChange={(e) => setNueva(e.target.value)} autoComplete="new-password" className="h-10" />
         </Campo>
         <Campo id="password_repetida" etiqueta="Repite la nueva" error={noCoinciden ? 'No coincide con la nueva contraseña.' : undefined}>
-          <Input id="password_repetida" type={tipo} value={repetida} onChange={(e) => setRepetida(e.target.value)} autoComplete="new-password" className="h-9" />
+          <Input id="password_repetida" type={tipo} value={repetida} onChange={(e) => setRepetida(e.target.value)} autoComplete="new-password" className="h-10" />
         </Campo>
       </div>
       <Button type="button" variant="ghost" size="sm" onClick={() => setVer((v) => !v)} className="-ml-2">

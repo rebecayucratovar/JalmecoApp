@@ -74,14 +74,14 @@ export function FichaTecnico({ tecnico: t, ahora, alCerrar }: { tecnico: Tecnico
       )}
 
       <div className="flex gap-2 border-t p-3">
-        <Button asChild className="h-9 flex-1">
+        <Button asChild className="h-10 flex-1">
           <Link to={`/tecnicos/${t.id}`}>
             <RouteIcon />
             Ver recorrido
           </Link>
         </Button>
         {t.celular_numero && (
-          <Button asChild variant="outline" className="h-9 flex-1">
+          <Button asChild variant="outline" className="h-10 flex-1">
             <a href={`tel:${t.celular_numero.replace(/\s+/g, '')}`}>
               <PhoneIcon />
               Llamar

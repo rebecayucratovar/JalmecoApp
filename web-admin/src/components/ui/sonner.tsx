@@ -7,7 +7,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
 
   return (
     <Sonner
-      theme={efectivo === "oscuro" ? "dark" : "light"}
+      theme="dark"
       className="toaster group"
       icons={{
         success: (
@@ -28,9 +28,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
+          "--normal-bg": "#0f172a",
+          "--normal-text": "#f8fafc",
+          "--normal-border": efectivo === "oscuro" ? "rgb(255 255 255 / 0.12)" : "#0f172a",
           "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }
