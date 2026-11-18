@@ -1,4 +1,4 @@
-"""Cierre automático de jornadas sin salida marcada (fin del horario + 2 h)."""
+"""Cierre automático de jornadas sin salida marcada (fin del horario + cierre_auto_horas)."""
 from datetime import datetime, time, timedelta
 
 from django.contrib.gis.geos import Point
@@ -6,6 +6,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from alertas.models import Alerta
+from core.models import Configuracion
 from odoo_sync import servicios as odoo
 from odoo_sync.test_sincronizacion import OdooFalso
 from ubicaciones.models import Ubicacion
@@ -24,6 +25,13 @@ class CierreAutomaticoTest(TestCase):
         self.dia = timezone.localdate() - timedelta(days=1)
         self.t = Tecnico.objects.create(nombre='Kevin', usuario='kevin', odoo_employee_id=10,
                                         estado_actual=Tecnico.Estado.EN_PARADA)
+        Configuracion.objects.filter(pk=Configuracion.actual().pk).update(cierre_auto_horas=2)
+
+    def test_por_defecto_cierra_a_las_22_por_las_horas_extra(self):
+        Configuracion.objects.filter(pk=Configuracion.actual().pk).update(cierre_auto_horas=4)
+        Jornada.objects.create(tecnico=self.t, inicio=a_las(self.dia, 8))
+        self.assertEqual(cerrar_olvidadas(a_las(self.dia, 21, 30)), 0)  # sigue en horas extra
+        self.assertEqual(cerrar_olvidadas(a_las(self.dia, 22, 1)), 1)
 
     def test_no_cierra_antes_del_limite(self):
         Jornada.objects.create(tecnico=self.t, inicio=a_las(self.dia, 8))
@@ -65,3 +73,8 @@ class CierreAutomaticoTest(TestCase):
         odoo.sincronizar_asistencias(fake, a_las(self.dia, 21))
         j.refresh_from_db()
         self.assertEqual((j.estado, j.fin), ('cerrada', a_las(self.dia, 17, 30)))
+        # …o después (horas extra hasta las 21:00): también vale la de Odoo
+        fake.asistencia(500, 10, a_las(self.dia, 8), a_las(self.dia, 21))
+        odoo.sincronizar_asistencias(fake, a_las(self.dia, 21, 5))
+        j.refresh_from_db()
+        self.assertEqual((j.estado, j.fin), ('cerrada', a_las(self.dia, 21)))

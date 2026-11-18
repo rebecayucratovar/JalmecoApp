@@ -1,6 +1,7 @@
 """
 Cierre automático de jornadas olvidadas: quien no marca la salida en Odoo seguiría "en jornada"
-(y la app rastreándolo) toda la noche. Al pasar el fin del horario + MARGEN_CIERRE, se cierra.
+(y la app rastreándolo) toda la noche. Al pasar el fin del horario + `cierre_auto_horas`
+(Configuración, 4 h por defecto: hay horas extra hasta las 21:00), se cierra.
 """
 from datetime import datetime, timedelta
 
@@ -13,21 +14,22 @@ from usuarios.models import Tecnico
 
 from .models import Jornada
 
-MARGEN_CIERRE = timedelta(hours=2)
-# Si entró DESPUÉS del fin del horario (p. ej. una emergencia a las 21:00), tiene este plazo
+# Si entró DESPUÉS del fin del horario (p. ej. una emergencia a las 21:00), tiene al menos este plazo
 PLAZO_FUERA_DE_HORARIO = timedelta(hours=4)
 
 
 def limite_de(jornada, config):
     """
     (hora de cierre esperada, hasta cuándo puede seguir abierta sin marcar salida).
-    Normal: fin del horario y fin del horario + 2 h. Si entró después del horario: la entrada y +4 h.
+    Normal: fin del horario y fin del horario + `cierre_auto_horas`. Si entró después del horario:
+    la entrada y + el mayor entre 4 h y `cierre_auto_horas`.
     """
+    margen = timedelta(hours=config.cierre_auto_horas)
     dia = timezone.localtime(jornada.inicio).date()
     fin_horario = timezone.make_aware(datetime.combine(dia, config.horario_fin))
     if jornada.inicio >= fin_horario:
-        return jornada.inicio, jornada.inicio + PLAZO_FUERA_DE_HORARIO
-    return fin_horario, fin_horario + MARGEN_CIERRE
+        return jornada.inicio, jornada.inicio + max(PLAZO_FUERA_DE_HORARIO, margen)
+    return fin_horario, fin_horario + margen
 
 
 def cerrar_olvidadas(ahora=None):

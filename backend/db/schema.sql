@@ -162,6 +162,8 @@ CREATE TABLE configuracion (
                              CHECK (gps_distancia_m BETWEEN 5 AND 500),
     gps_intervalo_seg        INT NOT NULL DEFAULT 120   -- …o cada N segundos si está quieto
                              CHECK (gps_intervalo_seg BETWEEN 30 AND 900),
+    cierre_auto_horas        INT NOT NULL DEFAULT 4     -- cerrar la jornada sin salida N h después del horario
+                             CHECK (cierre_auto_horas BETWEEN 1 AND 8),
     sin_conexion_min         INT NOT NULL DEFAULT 30    -- alerta si no llegan datos en N min
                              CHECK (sin_conexion_min BETWEEN 3 AND 120),
     bateria_baja_pct         INT NOT NULL DEFAULT 15    -- alerta al bajar de N % (1 por jornada)

@@ -15,7 +15,7 @@ type Props = { config: Configuracion }
 // ---------- Horario y almuerzo ----------
 
 export function SeccionHorario({ config }: Props) {
-  const b = useBorrador(config, ['horario_inicio', 'horario_fin', 'almuerzo'] as const)
+  const b = useBorrador(config, ['horario_inicio', 'horario_fin', 'cierre_auto_horas', 'almuerzo'] as const)
   const { horario_inicio: inicio, horario_fin: fin } = b.borrador
   const almuerzo = b.borrador.almuerzo ?? { inicio: '12:00', fin: '13:00' }
 
@@ -38,6 +38,9 @@ export function SeccionHorario({ config }: Props) {
         Es informativo: la jornada real empieza y termina con la <strong className="font-medium text-foreground">entrada y salida
         marcadas en Odoo</strong>. Se usa para repartir las verificaciones por huella dentro del día.
       </Nota>
+      <CampoNumero id="cierre_auto_horas" etiqueta="Si no marca salida, cerrar la jornada" unidad="h" min={1} max={8}
+        valor={b.borrador.cierre_auto_horas} alCambiar={(v) => b.cambiar('cierre_auto_horas', v)} error={b.errores.cierre_auto_horas}
+        ayuda={`Horas después del fin del horario (${fin} + ${Number.isNaN(b.borrador.cierre_auto_horas) ? '…' : b.borrador.cierre_auto_horas} h). Dales margen a las horas extra; si luego marca la salida en Odoo, vale esa hora.`} />
       </div>
       <div className="space-y-5">
 

@@ -15,7 +15,7 @@ const json = (cuerpo: unknown, status = 200) =>
   new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
 const CONFIG = {
-  horario_inicio: '08:00', horario_fin: '18:00', almuerzo: { inicio: '12:00', fin: '13:00' },
+  horario_inicio: '08:00', horario_fin: '18:00', cierre_auto_horas: 4, almuerzo: { inicio: '12:00', fin: '13:00' },
   verificaciones_por_dia: 2, verificacion_limite_min: 3, gps_distancia_m: 25, gps_intervalo_seg: 120,
   sin_conexion_min: 30, bateria_baja_pct: 15, alertas_correos: '', alertas_destinatarios: ['ana@j.com'],
   correo_activo: false, retencion_meses: 12, odoo_sync_min: 2, espejo_odoo_min: 8,

@@ -196,16 +196,43 @@ Probar: **Actions → Backend / Panel web → Run workflow** sobre `main`.
 
 ## 4. App del técnico (APK)
 
-La dirección de la API se fija al compilar:
+La versión *release* ya apunta a `https://apigps.jalmeco.pro/api/v1` (`mobile/lib/config.dart`):
 
 ```bash
 cd mobile
-flutter build apk --release --dart-define=API_URL=https://apigps.jalmeco.pro/api/v1
+flutter build apk --release
 ```
 
-El APK queda en `mobile/build/app/outputs/flutter-apk/app-release.apk`. Para producción debe ir
-**firmado** con la llave de la empresa (guardar esa llave y su contraseña en un lugar seguro: sin ella
-no se pueden publicar actualizaciones).
+El APK queda en `mobile/build/app/outputs/flutter-apk/app-release.apk`.
+
+### Llave de la app (una sola vez)
+
+Android exige que todo APK esté firmado, también el que se instala pasándolo por WhatsApp o cable.
+Para **actualizar** la app en un celular, el APK nuevo debe venir firmado con **la misma llave**: si
+cambia, Android no lo instala encima y hay que desinstalar (se pierde la sesión). Por eso se crea una
+llave de la empresa y se guarda para siempre.
+
+1. Crear la llave (pide una contraseña y unos datos; `keytool` viene con Android Studio):
+
+   ```powershell
+   & "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkey -v `
+     -keystore C:\llaves\jalmeco-gps.jks -alias jalmeco -keyalg RSA -keysize 2048 -validity 10000
+   ```
+
+2. Crear `mobile/android/key.properties` (no se sube a GitHub):
+
+   ```
+   storeFile=C:/llaves/jalmeco-gps.jks
+   storePassword=LA_CONTRASEÑA
+   keyAlias=jalmeco
+   keyPassword=LA_CONTRASEÑA
+   ```
+
+3. Desde ahí, `flutter build apk --release` firma con esa llave.
+
+**Guardar el `.jks` y su contraseña en dos lugares seguros** (por ejemplo, el NAS y un gestor de
+contraseñas). Si se pierde, no se pueden publicar actualizaciones sobre las instalaciones existentes.
+La misma llave sirve si algún día se sube a Play Store.
 
 En cada celular: instalar, dar permiso de ubicación "Todo el tiempo" y **quitar la optimización de
 batería** para la app.
