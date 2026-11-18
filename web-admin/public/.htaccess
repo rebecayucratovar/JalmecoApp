@@ -15,7 +15,9 @@ RewriteRule ^ index.html [L]
   Header always set Strict-Transport-Security "max-age=31536000"
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "DENY"
-  Header always set Referrer-Policy "same-origin"
+  # OpenStreetMap exige saber desde qué sitio se piden los mapas (sin esto: "Access blocked" 403).
+  # Así solo recibe el dominio (https://ubicacionesgps.jalmeco.pro), nunca la página.
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
 
   # index.html nunca en caché (así cada despliegue se ve al instante); los archivos de /assets
