@@ -34,7 +34,7 @@ export function RecorridoPestana({ tecnicoId }: { tecnicoId: number }) {
             max={hoy}
             onChange={(e) => e.target.value && setFecha(e.target.value)}
             aria-label="Fecha del recorrido"
-            className="h-9 w-40"
+            className="h-10 w-40"
           />
           <Button variant="outline" size="icon" onClick={() => setFecha((f) => sumarDias(f, 1))} disabled={fecha >= hoy} aria-label="Día siguiente">
             <ChevronRightIcon />

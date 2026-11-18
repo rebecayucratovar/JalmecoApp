@@ -109,13 +109,13 @@ export default function AlertasPagina() {
           ))}
         </div>
         <Select value={rango} onValueChange={(v) => cambiar('rango', v)}>
-          <SelectTrigger className="h-9 bg-card lg:w-44" aria-label="Período"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-10 bg-card lg:w-44" aria-label="Período"><SelectValue /></SelectTrigger>
           <SelectContent>
             {Object.entries(RANGOS).map(([v, e]) => <SelectItem key={v} value={v}>{e}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={tipo} onValueChange={(v) => cambiar('tipo', v === 'todos' ? null : v)}>
-          <SelectTrigger className="h-9 bg-card lg:w-60" aria-label="Tipo de alerta"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-10 bg-card lg:w-60" aria-label="Tipo de alerta"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos los tipos</SelectItem>
             {Object.entries(TIPOS_ALERTA).map(([v, { etiqueta }]) => <SelectItem key={v} value={v}>{etiqueta}</SelectItem>)}

@@ -54,7 +54,7 @@ export default function ConfiguracionPagina() {
                 aria-current={actual === id ? 'page' : undefined}
                 onClick={() => setParams({ seccion: id }, { replace: true })}
                 className={cn(
-                  'flex h-9 w-full items-center gap-2.5 rounded-lg px-3 text-sm font-medium whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  'flex h-10 w-full items-center gap-2.5 rounded-lg px-3 text-sm font-medium whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   actual === id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                 )}
               >

@@ -130,7 +130,7 @@ function Contenido({ tecnico, alCerrar, alGuardar }: { tecnico?: TecnicoAdmin; a
       {tecnico && (
         <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
           <div>
-            <Label htmlFor="activo">Acceso activo</Label>
+            <Label htmlFor="activo" className="text-sm font-medium text-foreground">Acceso activo</Label>
             <p className="mt-0.5 text-xs text-muted-foreground">Si lo desactivas, no puede entrar a la app (su historial se conserva).</p>
           </div>
           <Switch id="activo" checked={campos.activo} onCheckedChange={cambiar('activo')} />

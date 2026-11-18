@@ -120,7 +120,7 @@ function Contenido({ alCerrar }: { alCerrar(): void }) {
             <div className="relative">
               <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Nombre o cargo"
-                aria-label="Buscar empleado" className="h-9 pl-9" />
+                aria-label="Buscar empleado" className="h-10 pl-9" />
             </div>
             <Filtro etiqueta="Empresa" todas="Todas las empresas" valor={empresa} alCambiar={setEmpresa} opciones={opciones(empleados, 'empresa')} />
             <Filtro etiqueta="Departamento" todas="Todos los departamentos" valor={departamento} alCambiar={setDepartamento}
@@ -192,7 +192,7 @@ function Filtro({ etiqueta, todas, valor, alCambiar, opciones }: {
 }) {
   return (
     <Select value={valor} onValueChange={alCambiar}>
-      <SelectTrigger className="h-9 sm:w-48" aria-label={etiqueta}>
+      <SelectTrigger className="h-10 sm:w-48" aria-label={etiqueta}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

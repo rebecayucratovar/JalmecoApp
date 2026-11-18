@@ -68,11 +68,11 @@ export default function TecnicosPagina() {
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Nombre, código, cargo o celular"
               aria-label="Buscar personal"
-              className="h-9 pl-9"
+              className="h-10 pl-9"
             />
           </div>
           <Select value={estado} onValueChange={(v) => setEstado(v as EstadoTecnico | 'todos')}>
-            <SelectTrigger className="h-9 lg:w-48" aria-label="Filtrar por estado">
+            <SelectTrigger className="h-10 lg:w-48" aria-label="Filtrar por estado">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

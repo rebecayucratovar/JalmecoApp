@@ -78,7 +78,7 @@ export function GraficoHoras({ dias }: { dias: Dia[] }) {
                         <span
                           className={cn(
                             'w-full max-w-16 rounded-t-[4px] transition-opacity group-hover:opacity-85',
-                            esHoy ? 'bg-primary' : 'bg-marino dark:bg-primary/45',
+                            esHoy ? 'bg-primary' : 'bg-slate-400 dark:bg-slate-500',
                           )}
                           style={{ height: d.horas > 0 ? `max(2px, ${(d.horas / max) * 100}%)` : 0 }}
                         />

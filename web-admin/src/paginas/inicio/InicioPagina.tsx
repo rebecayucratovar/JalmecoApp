@@ -128,7 +128,7 @@ function Indicador({ a, etiqueta, valor, detalle, punto, destacado, tono }: {
       to={a}
       className={cn(
         'flex min-h-36 flex-col rounded-xl border bg-card p-4 outline-none transition-colors hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring lg:p-5',
-        destacado && 'border-transparent bg-marino text-white hover:border-transparent hover:bg-marino/90 dark:bg-primary/15 dark:text-foreground',
+        destacado && 'border-transparent bg-primary text-white hover:border-transparent hover:bg-primary-hover dark:bg-primary/15 dark:hover:bg-primary/25 dark:text-foreground',
       )}
     >
       <p className={cn('flex items-center gap-2 text-sm font-medium', destacado ? 'text-white/85 dark:text-muted-foreground' : 'text-muted-foreground')}>
