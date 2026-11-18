@@ -52,9 +52,11 @@ export function MenuLateral({ contraido, alContraer, alCerrar, alNavegar }: Prop
       {/* Cabecera: logo + botón de contraer. Contraído: solo el botón para abrir. */}
       <div className="flex h-11 shrink-0 items-center gap-3">
         {contraido ? (
-          <button type="button" onClick={alContraer} className={cn(BOTON_ICONO, 'mx-auto size-11')}
+          // Se ve el logo; al pasar el mouse (o con el teclado) cambia al ícono de abrir
+          <button type="button" onClick={alContraer} className={cn(BOTON_ICONO, 'group mx-auto size-11')}
             aria-label="Abrir menú" title="Abrir menú">
-            <PanelLeftOpenIcon className="size-6" aria-hidden />
+            <img src={logo} alt="" className="size-10 rounded-full bg-white group-hover:hidden group-focus-visible:hidden" />
+            <PanelLeftOpenIcon className="hidden size-6 group-hover:block group-focus-visible:block" aria-hidden />
           </button>
         ) : (
           <>
@@ -92,23 +94,22 @@ export function MenuLateral({ contraido, alContraer, alCerrar, alNavegar }: Prop
                   end={ruta === '/'}
                   onClick={alNavegar}
                   aria-label={contraido ? `${titulo}${contador ? ` (${contador} nuevas)` : ''}` : undefined}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-slate-300 outline-none',
-                      'hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-sidebar-ring',
-                      contraido && 'justify-center px-0',
-                      isActive && 'bg-sidebar-primary text-white hover:bg-sidebar-primary',
-                    )
-                  }
+                  // className fijo (no función): el Tooltip (Slot) lo convertiría en texto. La opción
+                  // activa se marca con aria-current="page", que NavLink pone solo.
+                  className={cn(
+                    'relative flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-slate-300 outline-none',
+                    'hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                    'aria-[current=page]:bg-sidebar-primary aria-[current=page]:text-white',
+                    contraido && 'justify-center px-0',
+                  )}
                 >
-                  <span className="relative shrink-0">
-                    <Icono className="size-5" aria-hidden />
-                    {contraido && contador > 0 && (
-                      <span className="absolute -top-2 -right-2.5 min-w-4 rounded-full bg-orange-500 px-1 text-center text-[10px] font-bold leading-4 text-white tabular-nums ring-2 ring-sidebar" aria-hidden>
-                        {contador > 9 ? '9+' : contador}
-                      </span>
-                    )}
-                  </span>
+                  <Icono className="size-5 shrink-0" aria-hidden />
+                  {/* Contraído: el contador va en la esquina superior derecha del ícono */}
+                  {contraido && contador > 0 && (
+                    <span className="absolute top-1 right-1.5 min-w-4 rounded-full bg-orange-500 px-1 text-center text-[10px] font-bold leading-4 text-white tabular-nums ring-2 ring-sidebar" aria-hidden>
+                      {contador > 9 ? '9+' : contador}
+                    </span>
+                  )}
                   {!contraido && (
                     <>
                       <span className="flex-1 truncate">{titulo}</span>
