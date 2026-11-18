@@ -24,6 +24,7 @@ dependencies:
   battery_plus: 7.1.2              # nivel de batería en cada punto
   path: 1.9.1                      # rutas de archivos (SQLite)
   local_auth: 2.3.0                # huella (verificación de identidad)
+  local_auth_android: 1.0.52       # textos en español de la ventana de huella (AndroidAuthMessages)
   flutter_local_notifications: 20.1.0  # aviso "Confirma tu identidad" (alta prioridad)
 
 dev_dependencies:

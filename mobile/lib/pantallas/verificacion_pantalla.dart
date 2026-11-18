@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:local_auth/error_codes.dart' as codigos;
 import 'package:local_auth/local_auth.dart';
+import 'package:local_auth_android/local_auth_android.dart';
 
 import '../servicios/api.dart';
 import '../servicios/aviso_verificacion.dart';
@@ -23,6 +24,19 @@ Future<ResultadoHuella> pedirHuella() async {
     }
     final ok = await auth.authenticate(
       localizedReason: 'Confirma tu identidad para Jalmeco GPS',
+      // Sin esto, la ventana del sistema sale en inglés ("Authentication required", "Cancel")
+      authMessages: const [
+        AndroidAuthMessages(
+          signInTitle: 'Verificación de identidad',
+          biometricHint: 'Toca el sensor de huella',
+          biometricNotRecognized: 'Huella no reconocida. Intenta de nuevo.',
+          biometricSuccess: 'Huella reconocida',
+          biometricRequiredTitle: 'Se necesita tu huella',
+          cancelButton: 'Cancelar',
+          goToSettingsButton: 'Ir a ajustes',
+          goToSettingsDescription: 'Este celular no tiene una huella registrada. Regístrala en Ajustes.',
+        ),
+      ],
       options: const AuthenticationOptions(biometricOnly: true, stickyAuth: true),
     );
     return ok ? ResultadoHuella.ok : ResultadoHuella.fallo;
