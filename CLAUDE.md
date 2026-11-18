@@ -36,7 +36,7 @@ puede salir en jornada. MVP: La Paz; Santa Cruz entra con multi-sucursal (Fase 2
   `flutter_local_notifications`. Info del equipo: `device_info_plus`.
 - **Infra:** todo en Docker. Desarrollo local con `docker compose`. Producción en VPS
   (Contabo) con el mismo Docker. Respaldos al NAS. Mapa en vivo por sondeo (~10 s).
-- **Odoo:** Odoo.sh 17.0 Enterprise (`jalmeco.odoo.com`, base `appexbo-elevatec-main-12589680`,
+- **Odoo:** Odoo.sh 17.0 Enterprise (`jalmeco.odoo.com`, base `appexbo-jalmeco-teknoliff-main-41805985`,
   con módulos a medida del partner: p. ej. ubicación y estado en hr.attendance). Integración
   por API XML-RPC con clave API (`backend/odoo_sync/cliente.py`; probar con `manage.py probar_odoo`).
 
@@ -181,7 +181,9 @@ cd mobile && flutter run
 
 ## Producción (Hostinger) — ver `docs/despliegue.md`
 
-- **Panel:** hosting web de Hostinger, subdominio (p. ej. `gps.jalmeco.com.bo`). Se compila con
+- **Panel:** hosting web de Hostinger, `https://ubicacionesgps.jalmeco.pro` (carpeta
+  `/home/u358429369/domains/jalmeco.pro/public_html/ubicacionesgps`). API: `https://apigps.jalmeco.pro`
+  (VPS 179.66.145.72). Se compila con
   `VITE_API_URL` y se sube por FTP (`.github/workflows/panel.yml`); `public/.htaccess` resuelve las rutas.
 - **API + base + worker:** VPS de Hostinger con `docker-compose.prod.yml` (gunicorn, Caddy con HTTPS
   automático, base sin puertos publicados). `deploy/deploy.sh` lo actualiza; GitHub Actions lo corre por

@@ -4,9 +4,9 @@ Dónde vive cada parte:
 
 | Parte | Dónde | Dirección (ejemplo) |
 |---|---|---|
-| Panel web (React, archivos estáticos) | Hosting web de Hostinger, subdominio | `https://gps.jalmeco.com.bo` |
-| API + base de datos + worker (Docker) | VPS de Hostinger | `https://api.jalmeco.com.bo` |
-| App del técnico (APK) | celulares | llama a `https://api.jalmeco.com.bo/api/v1` |
+| Panel web (React, archivos estáticos) | Hosting web de Hostinger, subdominio | `https://ubicacionesgps.jalmeco.pro` |
+| API + base de datos + worker (Docker) | VPS de Hostinger | `https://apigps.jalmeco.pro` |
+| App del técnico (APK) | celulares | llama a `https://apigps.jalmeco.pro/api/v1` |
 
 Los nombres `gps.` y `api.` son sugerencias: si usan otros, reemplazarlos en todo este documento.
 
@@ -36,7 +36,7 @@ En hPanel → **VPS**:
 
 ### 1.2 DNS
 
-En hPanel → **Dominios → jalmeco.com.bo → DNS / Nameservers**, crear:
+En hPanel → **Dominios → jalmeco.pro → DNS / Nameservers**, crear:
 
 | Tipo | Nombre | Apunta a | TTL |
 |---|---|---|---|
@@ -44,7 +44,7 @@ En hPanel → **Dominios → jalmeco.com.bo → DNS / Nameservers**, crear:
 
 (El subdominio `gps` del panel se crea en el paso 2; Hostinger arma su DNS solo.)
 
-Comprobar desde la PC (puede tardar unos minutos): `nslookup api.jalmeco.com.bo` → debe dar la IP del VPS.
+Comprobar desde la PC (puede tardar unos minutos): `nslookup apigps.jalmeco.pro` → debe dar la IP del VPS.
 
 ### 1.3 Seguridad del servidor
 
@@ -121,7 +121,7 @@ chmod +x deploy/*.sh
 
 La primera vez tarda unos minutos (construye la imagen). Caddy saca el certificado HTTPS solo, si el
 DNS del paso 1.2 ya apunta al VPS. Comprobar en el navegador:
-`https://api.jalmeco.com.bo/api/v1/auth/refresh` → debe responder (un error 405 está bien: significa
+`https://apigps.jalmeco.pro/api/v1/auth/refresh` → debe responder (un error 405 está bien: significa
 que la API responde).
 
 Crear el primer administrador:
@@ -150,9 +150,9 @@ de `deploy/backup.sh`.
 
 ## 2. Panel en el hosting de Hostinger (una sola vez)
 
-1. hPanel → **Sitios web → jalmeco.com.bo → Dominios → Subdominios** → crear `gps`.
-   Anotar su carpeta (p. ej. `public_html/gps/` o `domains/gps.jalmeco.com.bo/public_html/`).
-2. hPanel → **Seguridad → SSL**: activar el certificado gratis para `gps.jalmeco.com.bo`.
+1. hPanel → **Sitios web → jalmeco.pro → Dominios → Subdominios** → crear `ubicacionesgps`.
+   Anotar su carpeta (p. ej. `public_html/gps/` o `domains/ubicacionesgps.jalmeco.pro/public_html/`).
+2. hPanel → **Seguridad → SSL**: activar el certificado gratis para `ubicacionesgps.jalmeco.pro`.
 3. hPanel → **Archivos → Cuentas FTP**: crear una cuenta **limitada a la carpeta del subdominio**.
    Anotar servidor, usuario y contraseña.
 
@@ -172,10 +172,10 @@ despliegue a mano.
 | Secret | `VPS_HOST` | IP del VPS |
 | Secret | `VPS_USUARIO` | `deploy` |
 | Secret | `VPS_CLAVE_SSH` | llave **privada** para entrar como `deploy` (ver abajo) |
-| Secret | `FTP_SERVIDOR` | servidor FTP de Hostinger (p. ej. `ftp.jalmeco.com.bo`) |
+| Secret | `FTP_SERVIDOR` | servidor FTP de Hostinger (p. ej. `ftp.jalmeco.pro`) |
 | Secret | `FTP_USUARIO` | usuario de la cuenta FTP del paso 2.3 |
 | Secret | `FTP_CLAVE` | su contraseña |
-| Variable | `VITE_API_URL` | `https://api.jalmeco.com.bo/api/v1` |
+| Variable | `VITE_API_URL` | `https://apigps.jalmeco.pro/api/v1` |
 | Variable | `DESPLIEGUE_ACTIVO` | `si` (sin esto, al llegar a main solo corren las pruebas) |
 | Variable | `FTP_CARPETA` | `./` si la cuenta FTP ya está limitada a la carpeta del subdominio |
 
@@ -200,7 +200,7 @@ La dirección de la API se fija al compilar:
 
 ```bash
 cd mobile
-flutter build apk --release --dart-define=API_URL=https://api.jalmeco.com.bo/api/v1
+flutter build apk --release --dart-define=API_URL=https://apigps.jalmeco.pro/api/v1
 ```
 
 El APK queda en `mobile/build/app/outputs/flutter-apk/app-release.apk`. Para producción debe ir
@@ -231,7 +231,7 @@ batería** para la app.
 - [ ] SSH solo con llave; fail2ban y actualizaciones automáticas activos
 - [ ] `backend/.env` con permisos 600 y nunca en GitHub
 - [ ] HTTPS en `api.` (Caddy) y en `gps.` (SSL de Hostinger)
-- [ ] CORS: solo `https://gps.jalmeco.com.bo`
+- [ ] CORS: solo `https://ubicacionesgps.jalmeco.pro`
 - [ ] Respaldo diario funcionando y una restauración probada
 - [ ] Usuario de Odoo de integración con permisos mínimos
 - [ ] APK firmado; llave de firma guardada fuera del repositorio
