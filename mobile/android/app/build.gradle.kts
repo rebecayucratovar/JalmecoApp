@@ -1,3 +1,12 @@
+import java.util.Properties
+
+// Llave de firma de la empresa (ver docs/despliegue.md → "Llave de la app"). key.properties y el
+// .jks NUNCA van a GitHub (están en .gitignore). Sin key.properties se firma con la de desarrollo.
+val llave = Properties().apply {
+    val archivo = rootProject.file("key.properties")
+    if (archivo.exists()) archivo.inputStream().use { load(it) }
+}
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -32,11 +41,21 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (llave.containsKey("storeFile")) {
+            create("empresa") {
+                storeFile = file(llave.getProperty("storeFile"))
+                storePassword = llave.getProperty("storePassword")
+                keyAlias = llave.getProperty("keyAlias")
+                keyPassword = llave.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (llave.containsKey("storeFile")) signingConfigs.getByName("empresa")
+                            else signingConfigs.getByName("debug")
         }
     }
 }

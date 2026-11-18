@@ -82,7 +82,7 @@ class SincronizacionTest(TestCase):
         self.odoo.empleado(10, 'Kevin Apaza')
         self.odoo.empleado(11, 'EVER CHOQUE')
         self.odoo.empleado(12, 'Ana Mamani', user=5)
-        self.odoo.usuarios[5] = 'ana.mamani.elevatec@gmail.com'
+        self.odoo.usuarios[5] = 'ana.mamani@ejemplo.com'
 
         r = servicios.importar(self.odoo, [10, 11, 12])
         self.assertEqual((r['importados'], r['vinculados']), (2, 1))
@@ -91,7 +91,7 @@ class SincronizacionTest(TestCase):
         self.assertEqual((manual.odoo_employee_id, manual.nombre, manual.usuario), (11, 'EVER CHOQUE', 'JAL-0001'))
         ana = Tecnico.objects.get(odoo_employee_id=12)
         self.assertEqual((ana.usuario, ana.usuario_de_odoo, ana.cargo, ana.pin_hash),
-                         ('ana.mamani.elevatec@gmail.com', True, 'Técnico de mantenimiento', None))
+                         ('ana.mamani@ejemplo.com', True, 'Técnico de mantenimiento', None))
 
         # Al repetir no duplica; si se archiva en Odoo, se desactiva aquí
         self.assertEqual(servicios.importar(self.odoo, [10])['actualizados'], 1)

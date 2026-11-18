@@ -37,6 +37,9 @@ class Configuracion(models.Model):
     # la jornada real la marcan la entrada/salida de Odoo.
     horario_inicio = models.TimeField(default=datetime.time(8, 0))
     horario_fin = models.TimeField(default=datetime.time(18, 0))
+    # Si no marca salida en Odoo, la jornada se cierra sola N horas después del fin del horario
+    # (horas extra: hay quienes se quedan hasta las 21:00; por eso 4 h por defecto → 22:00)
+    cierre_auto_horas = models.IntegerField(default=4, validators=[MinValueValidator(1), MaxValueValidator(8)])
     # Captura GPS de la app: un punto cada vez que se mueve N metros, o cada N segundos si
     # está quieto (así el panel sabe que sigue conectado aunque no se mueva).
     gps_distancia_m = models.IntegerField(default=25, validators=[MinValueValidator(5), MaxValueValidator(500)])
@@ -59,6 +62,8 @@ class Configuracion(models.Model):
         constraints = [
             models.CheckConstraint(condition=Q(odoo_sync_min__gte=1, odoo_sync_min__lte=2),
                                    name='configuracion_odoo_sync_min_rango'),
+            models.CheckConstraint(condition=Q(cierre_auto_horas__gte=1, cierre_auto_horas__lte=8),
+                                   name='configuracion_cierre_auto_horas_rango'),
             models.CheckConstraint(condition=Q(gps_distancia_m__gte=5, gps_distancia_m__lte=500),
                                    name='configuracion_gps_distancia_rango'),
             models.CheckConstraint(condition=Q(gps_intervalo_seg__gte=30, gps_intervalo_seg__lte=900),

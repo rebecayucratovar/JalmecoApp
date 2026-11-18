@@ -35,6 +35,7 @@ class ConfiguracionSerializer(serializers.ModelSerializer):
 
     horario_inicio = serializers.TimeField(format=HORA)
     horario_fin = serializers.TimeField(format=HORA)
+    cierre_auto_horas = serializers.IntegerField(**_rango(1, 8))
     almuerzo = AlmuerzoSerializer(required=False)  # no se puede quitar: es privacidad
     verificaciones_por_dia = serializers.IntegerField(**_rango(1, 4))
     verificacion_limite_min = serializers.IntegerField(**_rango(1, 15))
@@ -52,7 +53,7 @@ class ConfiguracionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Configuracion
         fields = [
-            'horario_inicio', 'horario_fin', 'almuerzo',
+            'horario_inicio', 'horario_fin', 'cierre_auto_horas', 'almuerzo',
             'verificaciones_por_dia', 'verificacion_limite_min',
             'gps_distancia_m', 'gps_intervalo_seg',
             'sin_conexion_min', 'bateria_baja_pct', 'alertas_correos', 'alertas_destinatarios', 'correo_activo',

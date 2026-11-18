@@ -307,6 +307,7 @@ Marca una como atendida (← la alerta) o varias: `{ "ids": [1, 2] }`; sin `ids`
 Configuración del sistema (pantalla Configuración). `PUT` acepta solo los campos que cambian.
 ```
 ← { "horario_inicio": "08:00", "horario_fin": "18:00",
+    "cierre_auto_horas": 4,           // 1–8: cerrar sola la jornada sin salida, N h tras el horario
     "almuerzo": { "inicio": "12:00", "fin": "13:00" },   // franja de pausa "Almuerzo"
     "verificaciones_por_dia": 2,      // 1–4
     "verificacion_limite_min": 3,     // 1–15

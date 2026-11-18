@@ -8,6 +8,8 @@ import { useSesion } from '@/lib/sesion'
 export interface Configuracion {
   horario_inicio: string
   horario_fin: string
+  /** Horas después del fin del horario en que se cierra sola la jornada sin salida marcada. */
+  cierre_auto_horas: number
   almuerzo: { inicio: string; fin: string } | null
   verificaciones_por_dia: number
   verificacion_limite_min: number

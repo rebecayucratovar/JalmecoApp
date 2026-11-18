@@ -36,7 +36,7 @@ puede salir en jornada. MVP: La Paz; Santa Cruz entra con multi-sucursal (Fase 2
   `flutter_local_notifications`. Info del equipo: `device_info_plus`.
 - **Infra:** todo en Docker. Desarrollo local con `docker compose`. Producción en VPS
   (Contabo) con el mismo Docker. Respaldos al NAS. Mapa en vivo por sondeo (~10 s).
-- **Odoo:** Odoo.sh 17.0 Enterprise (`jalmeco.odoo.com`, base `appexbo-elevatec-main-12589680`,
+- **Odoo:** Odoo.sh 17.0 Enterprise (`jalmeco.odoo.com`, base `appexbo-jalmeco-teknoliff-main-41805985`,
   con módulos a medida del partner: p. ej. ubicación y estado en hr.attendance). Integración
   por API XML-RPC con clave API (`backend/odoo_sync/cliente.py`; probar con `manage.py probar_odoo`).
 
@@ -105,10 +105,14 @@ alerta; si luego llega otro `equipo_id` → alerta `cambio_equipo`. Sin IMEI (An
   ubicación") y, si sigue apagado a los 5 min (`Motor.esperaAvisoGps`), recién la alerta al admin.
   Fuera de jornada solo avisa cerrar sesión (advertencia: no se registrará su próxima jornada);
   ubicación apagada o sin permiso fuera de jornada, no.
-- **Salida no marcada:** si la jornada sigue abierta al fin del horario + 2 h (o 4 h después de
+- **Salida no marcada:** si la jornada sigue abierta al fin del horario + `cierre_auto_horas`
+  (Configuración, 4 h por defecto → 22:00, porque hay horas extra hasta ~21:00; o ≥ 4 h después de
   una entrada fuera de horario), el worker la cierra (al fin del horario o al último punto GPS),
   marca `cierre_automatico` y crea la alerta `salida_no_marcada`. La sincronización con Odoo no
-  la reabre; si luego marca en Odoo una salida anterior, vale la de Odoo.
+  la reabre; si luego marca la salida en Odoo (antes o después del cierre), vale la de Odoo.
+- **Sábados y feriados:** la jornada la abre cualquier marcación de Odoo, cualquier día. El horario
+  (huellas, cierre automático) es el mismo todos los días; un horario distinto para el sábado
+  queda pendiente si hace falta.
 - **Almuerzo / privacidad:** entre 12:00 y 13:00 (hora America/La_Paz) la app NO recolecta ni
   guarda puntos, y el backend rechaza cualquier punto en esa franja. El personal además marca en
   Odoo la salida al almuerzo y el regreso (tolerancia de la empresa: ~12:10 y 13:05; los atrasos
@@ -181,14 +185,19 @@ cd mobile && flutter run
 
 ## Producción (Hostinger) — ver `docs/despliegue.md`
 
-- **Panel:** hosting web de Hostinger, subdominio (p. ej. `gps.jalmeco.com.bo`). Se compila con
+- **Panel:** hosting web de Hostinger, `https://ubicacionesgps.jalmeco.pro` (carpeta
+  `/home/u358429369/domains/jalmeco.pro/public_html/ubicacionesgps`). API: `https://apigps.jalmeco.pro`
+  (VPS 179.66.145.72). Se compila con
   `VITE_API_URL` y se sube por FTP (`.github/workflows/panel.yml`); `public/.htaccess` resuelve las rutas.
 - **API + base + worker:** VPS de Hostinger con `docker-compose.prod.yml` (gunicorn, Caddy con HTTPS
   automático, base sin puertos publicados). `deploy/deploy.sh` lo actualiza; GitHub Actions lo corre por
   SSH al llegar a `main` (`.github/workflows/backend.yml`). Respaldo diario: `deploy/backup.sh` (cron).
 - Variables del servidor: `deploy/env.produccion.example` → `backend/.env` en el VPS. Con `DEBUG=False`
   el backend no arranca si `SECRET_KEY` es la de ejemplo. CORS solo para el dominio del panel.
-- APK: `flutter build apk --release --dart-define=API_URL=https://api.…/api/v1`.
+- APK: `flutter build apk --release` ya apunta a `https://apigps.jalmeco.pro/api/v1` (`mobile/lib/config.dart`,
+  `kReleaseMode`). Se firma con la llave de la empresa si existe `mobile/android/key.properties` (fuera
+  de git); si no, con la de desarrollo (no sirve para actualizar las instalaciones).
+- Panel: `web-admin/.env.production` (versionado, no es secreto) fija `VITE_API_URL`.
 
 ## Decisiones pendientes
 
