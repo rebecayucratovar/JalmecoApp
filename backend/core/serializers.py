@@ -47,7 +47,7 @@ class ConfiguracionSerializer(serializers.ModelSerializer):
     alertas_destinatarios = serializers.SerializerMethodField()
     correo_activo = serializers.SerializerMethodField()  # hay servidor SMTP en backend/.env
     retencion_meses = serializers.IntegerField(**_rango(1, 36))
-    odoo_sync_min = serializers.IntegerField(**_rango(1, 2))
+    odoo_sync_min = serializers.IntegerField(**_rango(1, 10))
     espejo_odoo_min = serializers.IntegerField(**_rango(5, 60))
 
     class Meta:

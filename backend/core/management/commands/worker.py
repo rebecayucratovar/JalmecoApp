@@ -13,7 +13,7 @@ Tareas (cada una aislada: si una falla, se registra el error y las demás siguen
 - Correo al administrador con las alertas nuevas ......... cada 1 min
 - Retención: borrar datos de más de N meses ............... cada 24 h (y al arrancar)
 - Cierre de jornadas sin salida marcada (fin del horario + 2 h) cada 5 min
-- Odoo: asistencia → jornadas ............................. cada `odoo_sync_min` (1–2 min)
+- Odoo: asistencia → jornadas ............................. cada `odoo_sync_min` (1–10 min)
 - Odoo: datos del personal importado (nombre, cargo, baja) . cada 1 h
 (Las de Odoo no hacen nada mientras falten los datos de conexión en backend/.env.)
 """

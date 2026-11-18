@@ -30,8 +30,9 @@ class Configuracion(models.Model):
     retencion_meses = models.IntegerField(default=12)  # borrar datos más viejos
     verificaciones_por_dia = models.IntegerField(default=2)  # huellas por jornada
     verificacion_limite_min = models.IntegerField(default=3)  # minutos para responder
-    # Cada cuánto leer la asistencia (entrada/salida) de Odoo: 1 o 2 min como máximo
-    odoo_sync_min = models.IntegerField(default=2, validators=[MinValueValidator(1), MaxValueValidator(2)])
+    # Cada cuánto leer la asistencia (entrada/salida) de Odoo: 1 a 10 min (el panel ofrece 1, 2, 5 y 10).
+    # Más minutos = menos consultas a Odoo, pero la jornada se abre/cierra con ese retraso.
+    odoo_sync_min = models.IntegerField(default=2, validators=[MinValueValidator(1), MaxValueValidator(10)])
     espejo_odoo_min = models.IntegerField(default=8)  # subir última ubicación a Odoo
     # Horario laboral esperado (el almuerzo está en franja_pausa). Solo informativo:
     # la jornada real la marcan la entrada/salida de Odoo.
@@ -60,7 +61,7 @@ class Configuracion(models.Model):
         verbose_name = 'configuración'
         verbose_name_plural = 'configuración'
         constraints = [
-            models.CheckConstraint(condition=Q(odoo_sync_min__gte=1, odoo_sync_min__lte=2),
+            models.CheckConstraint(condition=Q(odoo_sync_min__gte=1, odoo_sync_min__lte=10),
                                    name='configuracion_odoo_sync_min_rango'),
             models.CheckConstraint(condition=Q(cierre_auto_horas__gte=1, cierre_auto_horas__lte=8),
                                    name='configuracion_cierre_auto_horas_rango'),

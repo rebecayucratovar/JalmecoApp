@@ -416,7 +416,7 @@ def _tarea(tipo, funcion, cada_min=None):
 
 
 def tarea_asistencia():
-    """Cada `odoo_sync_min` (1–2 min). El worker la llama cada minuto."""
+    """Cada `odoo_sync_min` (1–10 min). El worker la llama cada minuto."""
     return _tarea(SincronizacionOdoo.Tipo.ASISTENCIA, sincronizar_asistencias,
                   cada_min=Configuracion.actual().odoo_sync_min)
 

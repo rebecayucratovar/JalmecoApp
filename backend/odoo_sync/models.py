@@ -21,7 +21,7 @@ class SincronizacionOdoo(models.Model):
     Historial de sincronizaciones con Odoo (pantalla "Integración Odoo" del panel).
 
     Solo se guardan las que trajeron registros ("16:30 · asistencia · 2 registros") y las que
-    fallaron ("15:45 · tiempo de espera agotado, reintentado"). Las corridas vacías (cada 1–2 min)
+    fallaron ("15:45 · tiempo de espera agotado, reintentado"). Las corridas vacías (cada pocos minutos)
     no se guardan: solo actualizan Configuracion.odoo_ultima_sync_ok. Usar `registrar()`.
     """
 
