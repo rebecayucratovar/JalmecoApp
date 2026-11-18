@@ -153,8 +153,8 @@ CREATE TABLE configuracion (
     retencion_meses          INT NOT NULL DEFAULT 12,   -- borrar datos más viejos
     verificaciones_por_dia   INT NOT NULL DEFAULT 2,    -- huellas por jornada
     verificacion_limite_min  INT NOT NULL DEFAULT 3,    -- minutos para responder
-    odoo_sync_min            INT NOT NULL DEFAULT 2     -- cada cuánto leer asistencia (1–2 min)
-                             CHECK (odoo_sync_min BETWEEN 1 AND 2),
+    odoo_sync_min            INT NOT NULL DEFAULT 2     -- cada cuánto leer asistencia (1–10 min)
+                             CHECK (odoo_sync_min BETWEEN 1 AND 10),
     espejo_odoo_min          INT NOT NULL DEFAULT 8,    -- subir última ubicación a Odoo
     horario_inicio           TIME NOT NULL DEFAULT '08:00', -- horario laboral esperado
     horario_fin              TIME NOT NULL DEFAULT '18:00', -- (el almuerzo está en franja_pausa)

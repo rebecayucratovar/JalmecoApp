@@ -319,7 +319,7 @@ Configuración del sistema (pantalla Configuración). `PUT` acepta solo los camp
     "alertas_destinatarios": ["a@x.com", "b@x.com"],   // solo lectura: a quién llegan hoy
     "correo_activo": false,           // solo lectura: hay SMTP en backend/.env
     "retencion_meses": 12,            // 1–36
-    "odoo_sync_min": 2,               // 1 o 2
+    "odoo_sync_min": 2,               // 1–10 (el panel ofrece 1, 2, 5 y 10)
     "espejo_odoo_min": 8 }            // 5–60
 ```
 - El horario debe terminar después de empezar y el almuerzo quedar dentro de él. El almuerzo no

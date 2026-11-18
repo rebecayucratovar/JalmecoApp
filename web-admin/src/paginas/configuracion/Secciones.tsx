@@ -259,12 +259,14 @@ export function SeccionOdoo({ config }: Props) {
       <Tarjeta titulo="Sincronización y datos guardados" borrador={b}>
         <div className="grid gap-5 sm:grid-cols-2">
           <Campo id="odoo_sync_min" etiqueta="Leer la asistencia de Odoo cada" error={b.errores.odoo_sync_min}
-            ayuda="Entradas y salidas que abren y cierran la jornada.">
+            ayuda="Entradas y salidas que abren y cierran la jornada. Con más minutos se consulta menos a Odoo, pero el rastreo empieza y termina con ese retraso.">
             <Select value={String(b.borrador.odoo_sync_min)} onValueChange={(v) => b.cambiar('odoo_sync_min', Number(v))}>
               <SelectTrigger id="odoo_sync_min" className="h-9 w-44"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="1">1 minuto</SelectItem>
                 <SelectItem value="2">2 minutos</SelectItem>
+                <SelectItem value="5">5 minutos</SelectItem>
+                <SelectItem value="10">10 minutos</SelectItem>
               </SelectContent>
             </Select>
           </Campo>

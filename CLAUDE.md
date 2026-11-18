@@ -140,7 +140,8 @@ alerta; si luego llega otro `equipo_id` → alerta `cambio_equipo`. Sin IMEI (An
 
 - Solo LECTURA de Odoo (`odoo_sync/servicios.py`). Leer `hr.attendance` para abrir/cerrar jornadas
   (entrada/salida); `hr.employee` para importar personal y su **cargo** (job position de Odoo). El
-  worker lee la asistencia cada **1–2 min** como máximo (`odoo_sync_min`).
+  worker lee la asistencia cada `odoo_sync_min` (1, 2, 5 o 10 min; 2 por defecto). Más minutos =
+  menos carga para Odoo, pero la jornada se abre/cierra con ese retraso.
 - **Importar personal:** lo elige el admin (Técnicos → "Importar de Odoo"), porque Odoo tiene 134
   empleados activos de 3 empresas (MI EMPRESA, TEKNOLIFT SRL, JALMECO LTDA) y ex empleados sin
   archivar. Nombre = `name` + `apellido_paterno` + `apellido_materno` (campos del partner: `name`
