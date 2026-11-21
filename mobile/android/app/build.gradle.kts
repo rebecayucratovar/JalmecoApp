@@ -39,6 +39,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["appLabel"] = "Jalmeco GPS"
     }
 
     signingConfigs {
@@ -53,6 +54,11 @@ android {
     }
 
     buildTypes {
+        // La versión de desarrollo se instala APARTE ("Jalmeco GPS (dev)"), sin pisar la app real
+        debug {
+            applicationIdSuffix = ".dev"
+            manifestPlaceholders["appLabel"] = "Jalmeco GPS (dev)"
+        }
         release {
             signingConfig = if (llave.containsKey("storeFile")) signingConfigs.getByName("empresa")
                             else signingConfigs.getByName("debug")

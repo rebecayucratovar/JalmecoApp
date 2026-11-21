@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../servicios/api.dart';
+import 'grabacion_pruebas_pantalla.dart';
 import '../servicios/dispositivo.dart';
 import '../tema.dart';
 import '../widgets/marca.dart';
@@ -139,6 +141,16 @@ class _LoginPantallaState extends State<LoginPantalla> {
                 child: Text('¿Olvidaste tu PIN? Pídelo a tu supervisor.',
                     style: TextStyle(fontSize: 13, color: Colores.textoSuave)),
               ),
+              // PROTOTIPO: solo existe en la versión de desarrollo (no en el APK de producción)
+              if (kDebugMode)
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(builder: (_) => const GrabacionPruebasPantalla())),
+                    icon: const Icon(Icons.mic_none),
+                    label: const Text('Pruebas de grabación (desarrollo)'),
+                  ),
+                ),
             ],
           ),
         ),
